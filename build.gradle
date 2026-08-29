@@ -56,6 +56,7 @@ sonar {
         property "sonar.projectKey", "sonar-group-oojuniiin_budget-service"
         property "sonar.organization", "sonar-group-oojuniiin"
         property "sonar.gradle.skipCompile", "true"
+        property "sonar.qualitygate.wait", "true"
     }
 }
 
