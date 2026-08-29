@@ -5,6 +5,10 @@ Microserviço de estudo (finanças pessoais) do [monorepo `workbox`](../README.m
 (segredo HS256 compartilhado), sem fluxo de login próprio. Primeiro serviço a seguir o
 padrão "um repo/submodule por microserviço" — serve de referência pros próximos.
 
+Também espelhado no [GitHub](https://github.com/juniiorliimatt/budget-service) — todo
+push pro GitLab é replicado automaticamente via git hook. Ver
+[README raiz](../README.md#espelho-no-github--git-hooks).
+
 ## Stack
 
 | Camada | Tecnologia |
