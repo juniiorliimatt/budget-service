@@ -13,7 +13,7 @@ push pro GitLab é replicado automaticamente via git hook. Ver
 
 | Camada | Tecnologia |
 |---|---|
-| Linguagem / runtime | Java 26 (toolchain Gradle) |
+| Linguagem / runtime | Java 25 LTS (toolchain Gradle) |
 | Framework | Spring Boot 3.5.16 |
 | Build | Gradle 9.7.1 |
 | Persistência | Spring Data JPA + Hibernate, Liquibase (migrations), schema `budget` próprio |
