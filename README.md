@@ -58,6 +58,9 @@ Profiles disponíveis (`spring.profiles.active`):
 Sobe em `PORT` (default **8081** — evita colidir com o `workbox-api`, que usa 8080, ao
 rodar os dois juntos localmente).
 
+Postgres local roda fora deste repo (ver [README raiz](../README.md#rodando-localmente))
+na porta **5433**, não 5432 — passe `DATABASE_URL=jdbc:postgresql://localhost:5433/budget`.
+
 CORS: `cors.allowed-origins` (default `http://localhost:5173,http://127.0.0.1:5173`,
 mesma origem do `workbox-app` em dev) via Spring Security nativo — não um `Filter`
 manual. Origem específica é ecoada (nunca `*`), com `Access-Control-Allow-Credentials:
