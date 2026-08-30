@@ -39,7 +39,7 @@ br.com.budget
 ## Autenticação
 
 Este serviço **não emite tokens** — ele confia nos JWTs emitidos por
-`POST /api/auth/login` no `workbox-api`, validados com o mesmo segredo HS256
+`POST /api/v1/auth/login` no `workbox-api`, validados com o mesmo segredo HS256
 (`jwt.secret`/`JWT_SECRET`, mesmo valor default nos dois serviços). Peça um token no
 workbox-api e mande em `Authorization: Bearer <token>` aqui. A claim `roles` do JWT vira
 authority diretamente (sem prefixo adicional, já vem `ROLE_*` do emissor).
