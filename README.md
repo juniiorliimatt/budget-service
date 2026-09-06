@@ -51,7 +51,7 @@ Profiles disponíveis (`spring.profiles.active`):
 | Profile | Banco | Uso |
 |---|---|---|
 | `test` | H2 em memória (`ddl-auto=create-drop`) | Testes automatizados, geração do contrato OpenAPI |
-| `dev` (default) | PostgreSQL local via `DATABASE_URL` (default `jdbc:postgresql://localhost:5432/workbox`), schema `budget` | Desenvolvimento |
+| `dev` (default) | PostgreSQL local via `DATABASE_URL` (default `jdbc:postgresql://localhost:5433/workbox`), schema `budget` | Desenvolvimento |
 | `prod` | PostgreSQL via `DATABASE_URL` (obrigatório) | Deploy |
 
 ```bash
@@ -102,4 +102,6 @@ JUnit 5 + Spring Boot Test + MockMvc, autenticação simulada via
 
 ## CI/CD
 
-`.gitlab-ci.yml`: `test` → `contract-drift-check` (contrato em dia) → `build`.
+`.gitlab-ci.yml`: `test` (build + testes) → `contract-drift-check` (contrato em dia) →
+`build` (empacota o JAR). `sonarcloud-check` roda análise estática em merge requests e em
+pushes diretos à `main` (não `develop` — só dispara em MR ou push na branch protegida).
