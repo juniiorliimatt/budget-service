@@ -22,8 +22,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.util.UUID;
 
+/**
+ * Receitas -> Entradas
+ * @author Junior Lima - oojuniin@outlook.com
+ * @since 12/09/2026
+ */
+
 @RestController
-@RequestMapping("/api/revenues")
+@RequestMapping("/api/v1/revenues")
 public class RevenueController {
 
     private final RevenueService revenueService;

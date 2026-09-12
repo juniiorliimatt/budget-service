@@ -10,7 +10,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,14 +29,21 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    @Value("${introspection.uri}")
+    private String introspectionUri;
+
+    @Value("${introspection.client-id}")
+    private String introspectionClientId;
+
+    @Value("${introspection.client-secret}")
+    private String introspectionClientSecret;
+
 
     @Value("${cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
     private List<String> allowedOrigins;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, OpaqueTokenIntrospector introspector) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
         httpSecurity.httpBasic(AbstractHttpConfigurer::disable);
         httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -45,8 +54,9 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
         );
 
-        httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
-
+        httpSecurity.oauth2ResourceServer(
+            oauth2 -> oauth2.opaqueToken(
+                opaque -> opaque.introspector(introspector)));
         return httpSecurity.build();
     }
 
@@ -64,10 +74,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder() {
-        var secretKey = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(secretKey).build();
+    public OpaqueTokenIntrospector opaqueTokenIntrospector() {
+        return new WorkboxTokenIntrospector(RestClient.create(), introspectionUri,
+            introspectionClientId, introspectionClientSecret);
     }
+
 
     private JwtAuthenticationConverter jwtAuthenticationConverter() {
         var authoritiesConverter = new JwtGrantedAuthoritiesConverter();
