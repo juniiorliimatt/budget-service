@@ -1,9 +1,10 @@
 # budget-service
 
 Microserviço de estudo (finanças pessoais) do [monorepo `workbox`](../README.md) —
-**resource server**: valida os JWTs emitidos pelo [`workbox-api`](../workbox-api/README.md)
-(segredo HS256 compartilhado), sem fluxo de login próprio. Primeiro serviço a seguir o
-padrão "um repo/submodule por microserviço" — serve de referência pros próximos.
+**resource server**: valida os access tokens emitidos pelo [`workbox-api`](../workbox-api/README.md)
+via introspecção remota (client credentials), sem fluxo de login próprio e sem conhecer
+nenhum segredo de assinatura de JWT. Primeiro serviço a seguir o padrão "um repo/submodule
+por microserviço" — serve de referência pros próximos.
 
 Também espelhado no [GitHub](https://github.com/juniiorliimatt/budget-service) — todo
 push pro GitLab é replicado automaticamente via git hook. Ver
@@ -18,7 +19,7 @@ push pro GitLab é replicado automaticamente via git hook. Ver
 | Build | Gradle 9.7.1 |
 | Persistência | Spring Data JPA + Hibernate, Liquibase (migrations), schema `budget` próprio |
 | Banco | PostgreSQL (dev/prod), H2 em memória (test) |
-| Segurança | Spring Security 6 (OAuth2 resource server), valida JWT do workbox-api |
+| Segurança | Spring Security 6 (OAuth2 resource server, opaque token), valida token via introspecção remota no workbox-api |
 | Documentação de API | springdoc-openapi (Swagger UI + contrato versionado) |
 | Cobertura | JaCoCo |
 
@@ -38,11 +39,17 @@ br.com.budget
 
 ## Autenticação
 
-Este serviço **não emite tokens** — ele confia nos JWTs emitidos por
-`POST /api/v1/auth/login` no `workbox-api`, validados com o mesmo segredo HS256
-(`jwt.secret`/`JWT_SECRET`, mesmo valor default nos dois serviços). Peça um token no
-workbox-api e mande em `Authorization: Bearer <token>` aqui. A claim `roles` do JWT vira
-authority diretamente (sem prefixo adicional, já vem `ROLE_*` do emissor).
+Este serviço **não emite tokens** — confia nos access tokens emitidos por
+`POST /api/v1/auth/login` no `workbox-api`, mas **não os decodifica localmente**: valida
+cada um via introspecção remota (`POST /api/v1/auth/introspect` no `workbox-api`, com
+client credentials HTTP Basic — `INTROSPECTION_CLIENT_ID`/`INTROSPECTION_CLIENT_SECRET`,
+tem que bater com uma linha ativa em `workbox.api_clients`). Isso propaga revogação
+(logout/troca de senha) de forma automática — o que uma decodificação local nunca
+enxergaria. Peça um token no workbox-api e mande em `Authorization: Bearer <token>`
+aqui, como sempre. A claim `roles` do resultado da introspecção vira authority
+diretamente (sem prefixo adicional, já vem `ROLE_*` do emissor). Ver
+[`docs/budget-service-migracao-introspeccao.md`](../docs/budget-service-migracao-introspeccao.md)
+na raiz pra detalhes de implementação.
 
 ## Rodando localmente
 

@@ -6,10 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.client.RestClient;
@@ -17,13 +13,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Resource server: valida os mesmos JWTs emitidos pelo workbox-api (segredo HS256
- * compartilhado via {@code jwt.secret}/{@code JWT_SECRET}), sem fluxo de login próprio.
+ * Resource server: valida os access tokens emitidos pelo workbox-api via introspecção
+ * remota (POST /api/v1/auth/introspect, client credentials) — nunca decodifica o JWT
+ * localmente nem conhece jwt.secret/JWT_SECRET. Sem fluxo de login próprio.
  */
 @Configuration
 @EnableWebSecurity
@@ -77,16 +72,5 @@ public class SecurityConfig {
     public OpaqueTokenIntrospector opaqueTokenIntrospector() {
         return new WorkboxTokenIntrospector(RestClient.create(), introspectionUri,
             introspectionClientId, introspectionClientSecret);
-    }
-
-
-    private JwtAuthenticationConverter jwtAuthenticationConverter() {
-        var authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthoritiesClaimName("roles");
-        authoritiesConverter.setAuthorityPrefix("");
-
-        var converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return converter;
     }
 }
