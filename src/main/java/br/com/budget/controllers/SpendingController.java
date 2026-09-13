@@ -1,10 +1,13 @@
 package br.com.budget.controllers;
 
 import br.com.budget.models.dto.SpendingDTO;
+import br.com.budget.models.dto.SpendingRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.services.AuditService;
 import br.com.budget.services.SpendingService;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,9 +39,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class SpendingController {
 
   private final SpendingService spendingService;
+  private final AuditService auditService;
 
-  public SpendingController(SpendingService spendingService) {
+  public SpendingController(SpendingService spendingService, AuditService auditService) {
     this.spendingService = spendingService;
+    this.auditService = auditService;
   }
 
   /** {@code month}+{@code year} e {@code typeId} são opcionais e combináveis. */
@@ -54,6 +59,12 @@ public class SpendingController {
   @GetMapping("/{id}")
   public ResponseEntity<SpendingDTO> findById(@PathVariable UUID id, Authentication authentication) {
     return ResponseEntity.ok(spendingService.findById(id, authentication.getName()));
+  }
+
+  /** Histórico de revisões (Hibernate Envers) — só do dono do lançamento. */
+  @GetMapping("/{id}/history")
+  public ResponseEntity<List<SpendingRevisionDTO>> history(@PathVariable UUID id, Authentication authentication) {
+    return ResponseEntity.ok(auditService.findSpendingHistory(id, authentication.getName()));
   }
 
   /** Mesmos filtros de {@link #search}, soma o {@code value} em vez de paginar. */

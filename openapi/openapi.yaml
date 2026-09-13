@@ -293,6 +293,27 @@ paths:
           description: OK
       tags:
       - revenue-controller
+  /api/v1/revenues/{id}/history:
+    get:
+      operationId: history_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueRevisionDTO"
+          description: OK
+      tags:
+      - revenue-controller
   /api/v1/spending-types:
     get:
       operationId: findAll
@@ -522,6 +543,27 @@ paths:
           description: OK
       tags:
       - spending-controller
+  /api/v1/spendings/{id}/history:
+    get:
+      operationId: history
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpendingRevisionDTO"
+          description: OK
+      tags:
+      - spending-controller
 components:
   schemas:
     BudgetBucketDTO:
@@ -677,6 +719,33 @@ components:
       - date
       - typeId
       - value
+    RevenueRevisionDTO:
+      type: object
+      properties:
+        changedAt:
+          type: string
+          format: date-time
+        changedBy:
+          type: string
+        date:
+          type: string
+          format: date
+        id:
+          type: string
+          format: uuid
+        referenceDate:
+          type: string
+          format: date
+        revision:
+          type: integer
+          format: int32
+        revisionType:
+          type: string
+        typeId:
+          type: string
+          format: uuid
+        value:
+          type: number
     RevenueTypeDTO:
       type: object
       properties:
@@ -727,6 +796,37 @@ components:
       - typeId
       - value
       - wasPaid
+    SpendingRevisionDTO:
+      type: object
+      properties:
+        changedAt:
+          type: string
+          format: date-time
+        changedBy:
+          type: string
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        id:
+          type: string
+          format: uuid
+        referenceDate:
+          type: string
+          format: date
+        revision:
+          type: integer
+          format: int32
+        revisionType:
+          type: string
+        typeId:
+          type: string
+          format: uuid
+        value:
+          type: number
+        wasPaid:
+          type: boolean
     SpendingTypeDTO:
       type: object
       properties:

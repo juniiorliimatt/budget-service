@@ -12,11 +12,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.com.budget.models.dto.SpendingDTO;
+import br.com.budget.models.dto.SpendingRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.services.AuditService;
 import br.com.budget.services.SpendingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -48,6 +51,9 @@ class SpendingControllerTest {
 
     @MockitoBean
     private SpendingService spendingService;
+
+    @MockitoBean
+    private AuditService auditService;
 
     private RequestPostProcessor auth() {
         return opaqueToken()
@@ -129,5 +135,19 @@ class SpendingControllerTest {
     void delete_withAuth_returnsNoContent() throws Exception {
         mockMvc.perform(delete(API_V1_SPENDINGS + "/" + UUID.randomUUID()).with(auth()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void history_withAuth_returnsRevisions() throws Exception {
+        var id = UUID.randomUUID();
+        var typeId = UUID.randomUUID();
+        var revision = new SpendingRevisionDTO(1, LocalDateTime.now(), OWNER, "ADD", id, typeId, "Descrição de teste",
+                BigDecimal.valueOf(300), LocalDate.now(), LocalDate.now(), false);
+        when(auditService.findSpendingHistory(id, OWNER)).thenReturn(List.of(revision));
+
+        mockMvc.perform(get(API_V1_SPENDINGS + "/" + id + "/history").with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].revisionType").value("ADD"))
+                .andExpect(jsonPath("$[0].value").value(300));
     }
 }

@@ -12,11 +12,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.com.budget.models.dto.RevenueDTO;
+import br.com.budget.models.dto.RevenueRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.services.AuditService;
 import br.com.budget.services.RevenueService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -48,6 +51,9 @@ class RevenueControllerTest {
 
     @MockitoBean
     private RevenueService revenueService;
+
+    @MockitoBean
+    private AuditService auditService;
 
     private RequestPostProcessor auth() {
         return opaqueToken()
@@ -130,5 +136,18 @@ class RevenueControllerTest {
     void delete_withAuth_returnsNoContent() throws Exception {
         mockMvc.perform(delete(API_V1_REVENUES + "/" + UUID.randomUUID()).with(auth()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void history_withAuth_returnsRevisions() throws Exception {
+        var id = UUID.randomUUID();
+        var typeId = UUID.randomUUID();
+        var revision = new RevenueRevisionDTO(1, LocalDateTime.now(), OWNER, "ADD", id, typeId, BigDecimal.valueOf(1000), LocalDate.now(), LocalDate.now());
+        when(auditService.findRevenueHistory(id, OWNER)).thenReturn(List.of(revision));
+
+        mockMvc.perform(get(API_V1_REVENUES + "/" + id + "/history").with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].revisionType").value("ADD"))
+                .andExpect(jsonPath("$[0].value").value(1000));
     }
 }
