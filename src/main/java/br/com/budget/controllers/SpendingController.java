@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,39 +44,42 @@ public class SpendingController {
   public ResponseEntity<Page<SpendingDTO>> search(@RequestParam(required = false) Integer month,
                                                     @RequestParam(required = false) Integer year,
                                                     @RequestParam(required = false) UUID typeId,
-                                                    Pageable pageable) {
-    return ResponseEntity.ok(spendingService.search(month, year, typeId, pageable));
+                                                    Pageable pageable, Authentication authentication) {
+    return ResponseEntity.ok(spendingService.search(month, year, typeId, authentication.getName(), pageable));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<SpendingDTO> findById(@PathVariable UUID id) {
-    return ResponseEntity.ok(spendingService.findById(id));
+  public ResponseEntity<SpendingDTO> findById(@PathVariable UUID id, Authentication authentication) {
+    return ResponseEntity.ok(spendingService.findById(id, authentication.getName()));
   }
 
   /** Mesmos filtros de {@link #search}, soma o {@code value} em vez de paginar. */
   @GetMapping("/total")
   public ResponseEntity<TotalDTO> total(@RequestParam(required = false) Integer month,
                                          @RequestParam(required = false) Integer year,
-                                         @RequestParam(required = false) UUID typeId) {
-    return ResponseEntity.ok(spendingService.total(month, year, typeId));
+                                         @RequestParam(required = false) UUID typeId,
+                                         Authentication authentication) {
+    return ResponseEntity.ok(spendingService.total(month, year, typeId, authentication.getName()));
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  public ResponseEntity<SpendingDTO> save(@RequestBody @Valid SpendingDTO dto, UriComponentsBuilder uriBuilder) {
-    final var saved = spendingService.save(dto);
+  public ResponseEntity<SpendingDTO> save(@RequestBody @Valid SpendingDTO dto, UriComponentsBuilder uriBuilder,
+                                           Authentication authentication) {
+    final var saved = spendingService.save(dto, authentication.getName());
     final URI uri = uriBuilder.path("/api/v1/spendings/{id}").buildAndExpand(saved.id()).toUri();
     return ResponseEntity.created(uri).body(saved);
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<SpendingDTO> update(@PathVariable UUID id, @RequestBody @Valid SpendingDTO dto) {
-    return ResponseEntity.ok(spendingService.update(id, dto));
+  public ResponseEntity<SpendingDTO> update(@PathVariable UUID id, @RequestBody @Valid SpendingDTO dto,
+                                             Authentication authentication) {
+    return ResponseEntity.ok(spendingService.update(id, dto, authentication.getName()));
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(@PathVariable UUID id) {
-    spendingService.delete(id);
+  public void delete(@PathVariable UUID id, Authentication authentication) {
+    spendingService.delete(id, authentication.getName());
   }
 }

@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class BudgetRuleControllerTest {
 
     private static final String API_V1_BUDGET_RULES = "/api/v1/budget-rules";
+    private static final String OWNER = "qa.admin@workbox.local";
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,12 +46,14 @@ class BudgetRuleControllerTest {
                 BudgetBucketDTO.of(BigDecimal.valueOf(500), BigDecimal.valueOf(600)),
                 BudgetBucketDTO.of(BigDecimal.valueOf(300), BigDecimal.valueOf(200)),
                 BudgetBucketDTO.of(BigDecimal.valueOf(200), BigDecimal.valueOf(200)));
-        when(budgetRuleService.fiftyThirtyTwenty(9, 2026)).thenReturn(dto);
+        when(budgetRuleService.fiftyThirtyTwenty(9, 2026, OWNER)).thenReturn(dto);
 
         mockMvc.perform(get(API_V1_BUDGET_RULES + "/fifty-thirty-twenty")
                         .param("month", "9")
                         .param("year", "2026")
-                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                        .with(opaqueToken()
+                                .attributes(attrs -> attrs.put("sub", OWNER))
+                                .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalRevenue").value(1000))
                 .andExpect(jsonPath("$.essential.difference").value(100))

@@ -30,6 +30,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @ActiveProfiles("test")
 @WebMvcTest(SpendingController.class)
@@ -37,6 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class SpendingControllerTest {
 
     private static final String API_V1_SPENDINGS = "/api/v1/spendings";
+    private static final String OWNER = "qa.admin@workbox.local";
 
     @Autowired
     private MockMvc mockMvc;
@@ -46,6 +48,12 @@ class SpendingControllerTest {
 
     @MockitoBean
     private SpendingService spendingService;
+
+    private RequestPostProcessor auth() {
+        return opaqueToken()
+                .attributes(attrs -> attrs.put("sub", OWNER))
+                .authorities(new SimpleGrantedAuthority("ROLE_USER"));
+    }
 
     private SpendingDTO dto(String typeName, BigDecimal value) {
         return new SpendingDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, "desc", value, LocalDate.now(), false);
@@ -60,10 +68,9 @@ class SpendingControllerTest {
     void search_withAuth_returnsPage() throws Exception {
         var dto = dto("Mercado", BigDecimal.valueOf(300));
         Page<SpendingDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
-        when(spendingService.search(isNull(), isNull(), isNull(), any())).thenReturn(page);
+        when(spendingService.search(isNull(), isNull(), isNull(), eq(OWNER), any())).thenReturn(page);
 
-        mockMvc.perform(get(API_V1_SPENDINGS)
-                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+        mockMvc.perform(get(API_V1_SPENDINGS).with(auth()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].typeName").value("Mercado"));
     }
@@ -72,24 +79,24 @@ class SpendingControllerTest {
     void search_withMonthYearAndType_passesFiltersThrough() throws Exception {
         var typeId = UUID.randomUUID();
         Page<SpendingDTO> page = new PageImpl<>(List.of());
-        when(spendingService.search(eq(9), eq(2026), eq(typeId), any())).thenReturn(page);
+        when(spendingService.search(eq(9), eq(2026), eq(typeId), eq(OWNER), any())).thenReturn(page);
 
         mockMvc.perform(get(API_V1_SPENDINGS)
                         .param("month", "9")
                         .param("year", "2026")
                         .param("typeId", typeId.toString())
-                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                        .with(auth()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void total_withAuth_returnsSum() throws Exception {
-        when(spendingService.total(9, 2026, null)).thenReturn(new TotalDTO(BigDecimal.valueOf(450)));
+        when(spendingService.total(9, 2026, null, OWNER)).thenReturn(new TotalDTO(BigDecimal.valueOf(450)));
 
         mockMvc.perform(get(API_V1_SPENDINGS + "/total")
                         .param("month", "9")
                         .param("year", "2026")
-                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                        .with(auth()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(450));
     }
@@ -97,10 +104,10 @@ class SpendingControllerTest {
     @Test
     void save_withValidBody_returnsCreated() throws Exception {
         var dto = dto("Aluguel", BigDecimal.valueOf(1500));
-        when(spendingService.save(any())).thenReturn(dto);
+        when(spendingService.save(any(), eq(OWNER))).thenReturn(dto);
 
         mockMvc.perform(post(API_V1_SPENDINGS)
-                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER")))
+                        .with(auth())
                         .contentType("application/json")
                         .content(mapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -109,8 +116,7 @@ class SpendingControllerTest {
 
     @Test
     void delete_withAuth_returnsNoContent() throws Exception {
-        mockMvc.perform(delete(API_V1_SPENDINGS + "/" + UUID.randomUUID())
-                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+        mockMvc.perform(delete(API_V1_SPENDINGS + "/" + UUID.randomUUID()).with(auth()))
                 .andExpect(status().isNoContent());
     }
 }

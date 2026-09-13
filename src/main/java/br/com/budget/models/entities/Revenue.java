@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -57,6 +58,11 @@ public class Revenue {
     @NotNull(message = "Required field date")
     @Column(nullable = false)
     private LocalDate date;
+
+    /** Username (subject da introspecção) do dono do lançamento — nunca vem do client. */
+    @NotBlank(message = "Required field ownerUsername")
+    @Column(name = "owner_username", nullable = false, updatable = false, length = 255)
+    private String ownerUsername;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

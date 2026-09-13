@@ -23,8 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Busca de despesas é sempre por mês/ano + tipo (ambos opcionais, combináveis) — mesmo
- * padrão de {@link RevenueService}: intervalo de datas em vez de função de banco tipo
+ * Busca de despesas é sempre por mês/ano + tipo (ambos opcionais, combináveis), sempre
+ * restrita ao {@code ownerUsername} do usuário autenticado — mesmo padrão de
+ * {@link RevenueService}: intervalo de datas em vez de função de banco tipo
  * {@code MONTH()}/{@code EXTRACT()}, sargável e portável entre H2/Postgres.
  */
 @Service
@@ -46,32 +47,34 @@ public class SpendingService {
   }
 
   @Transactional(readOnly = true)
-  public Page<SpendingDTO> search(final Integer month, final Integer year, final UUID typeId, final Pageable pageable) {
+  public Page<SpendingDTO> search(final Integer month, final Integer year, final UUID typeId,
+                                   final String ownerUsername, final Pageable pageable) {
     final Specification<Spending> spec = (root, query, cb) ->
-            cb.and(buildPredicates(root, cb, month, year, typeId).toArray(new Predicate[0]));
+            cb.and(buildPredicates(root, cb, month, year, typeId, ownerUsername).toArray(new Predicate[0]));
     return spendingRepository.findAll(spec, pageable).map(SpendingDTO::from);
   }
 
   @Transactional(readOnly = true)
-  public SpendingDTO findById(final UUID id) {
-    return SpendingDTO.from(findEntityById(id));
+  public SpendingDTO findById(final UUID id, final String ownerUsername) {
+    return SpendingDTO.from(findEntityById(id, ownerUsername));
   }
 
   @Transactional
-  public SpendingDTO save(final SpendingDTO dto) {
+  public SpendingDTO save(final SpendingDTO dto, final String ownerUsername) {
     final var spending = Spending.builder()
             .type(requireType(dto.typeId()))
             .description(dto.description())
             .value(dto.value())
             .date(dto.date())
             .wasPaid(dto.wasPaid())
+            .ownerUsername(ownerUsername)
             .build();
     return SpendingDTO.from(spendingRepository.save(spending));
   }
 
   @Transactional
-  public SpendingDTO update(final UUID id, final SpendingDTO dto) {
-    final var spending = findEntityById(id);
+  public SpendingDTO update(final UUID id, final SpendingDTO dto, final String ownerUsername) {
+    final var spending = findEntityById(id, ownerUsername);
     spending.setType(requireType(dto.typeId()));
     spending.setDescription(dto.description());
     spending.setValue(dto.value());
@@ -81,27 +84,27 @@ public class SpendingService {
   }
 
   @Transactional
-  public void delete(final UUID id) {
-    spendingRepository.delete(findEntityById(id));
+  public void delete(final UUID id, final String ownerUsername) {
+    spendingRepository.delete(findEntityById(id, ownerUsername));
   }
 
   /** Total por mês/ano e/ou tipo (mesmos filtros de {@link #search}, ambos opcionais). */
   @Transactional(readOnly = true)
-  public TotalDTO total(final Integer month, final Integer year, final UUID typeId) {
+  public TotalDTO total(final Integer month, final Integer year, final UUID typeId, final String ownerUsername) {
     final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
     final var query = cb.createQuery(BigDecimal.class);
     final Root<Spending> root = query.from(Spending.class);
-    final var predicates = buildPredicates(root, cb, month, year, typeId);
+    final var predicates = buildPredicates(root, cb, month, year, typeId, ownerUsername);
     query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO));
-    if (!predicates.isEmpty()) {
-      query.where(predicates.toArray(new Predicate[0]));
-    }
+    query.where(predicates.toArray(new Predicate[0]));
     return new TotalDTO(entityManager.createQuery(query).getSingleResult());
   }
 
   private List<Predicate> buildPredicates(final Root<Spending> root, final CriteriaBuilder cb,
-                                           final Integer month, final Integer year, final UUID typeId) {
+                                           final Integer month, final Integer year, final UUID typeId,
+                                           final String ownerUsername) {
     final List<Predicate> predicates = new ArrayList<>();
+    predicates.add(cb.equal(root.get("ownerUsername"), ownerUsername));
     if (month != null && year != null) {
       final var from = LocalDate.of(year, month, 1);
       final var to = from.plusMonths(1);
@@ -114,8 +117,9 @@ public class SpendingService {
     return predicates;
   }
 
-  private Spending findEntityById(final UUID id) {
-    return spendingRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(SPENDING_NOT_FOUND));
+  private Spending findEntityById(final UUID id, final String ownerUsername) {
+    return spendingRepository.findByIdAndOwnerUsername(id, ownerUsername)
+            .orElseThrow(() -> new ResourceNotFoundException(SPENDING_NOT_FOUND));
   }
 
   private SpendingType requireType(final UUID typeId) {

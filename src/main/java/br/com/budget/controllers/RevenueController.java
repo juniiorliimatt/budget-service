@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,39 +44,42 @@ public class RevenueController {
     public ResponseEntity<Page<RevenueDTO>> search(@RequestParam(required = false) Integer month,
                                                      @RequestParam(required = false) Integer year,
                                                      @RequestParam(required = false) UUID typeId,
-                                                     Pageable pageable) {
-        return ResponseEntity.ok(revenueService.search(month, year, typeId, pageable));
+                                                     Pageable pageable, Authentication authentication) {
+        return ResponseEntity.ok(revenueService.search(month, year, typeId, authentication.getName(), pageable));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RevenueDTO> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(revenueService.findById(id));
+    public ResponseEntity<RevenueDTO> findById(@PathVariable UUID id, Authentication authentication) {
+        return ResponseEntity.ok(revenueService.findById(id, authentication.getName()));
     }
 
     /** Mesmos filtros de {@link #search}, soma o {@code value} em vez de paginar. */
     @GetMapping("/total")
     public ResponseEntity<TotalDTO> total(@RequestParam(required = false) Integer month,
                                            @RequestParam(required = false) Integer year,
-                                           @RequestParam(required = false) UUID typeId) {
-        return ResponseEntity.ok(revenueService.total(month, year, typeId));
+                                           @RequestParam(required = false) UUID typeId,
+                                           Authentication authentication) {
+        return ResponseEntity.ok(revenueService.total(month, year, typeId, authentication.getName()));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<RevenueDTO> save(@RequestBody @Valid RevenueDTO dto, UriComponentsBuilder uriBuilder) {
-        final var saved = revenueService.save(dto);
+    public ResponseEntity<RevenueDTO> save(@RequestBody @Valid RevenueDTO dto, UriComponentsBuilder uriBuilder,
+                                            Authentication authentication) {
+        final var saved = revenueService.save(dto, authentication.getName());
         final URI uri = uriBuilder.path("/api/v1/revenues/{id}").buildAndExpand(saved.id()).toUri();
         return ResponseEntity.created(uri).body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RevenueDTO> update(@PathVariable UUID id, @RequestBody @Valid RevenueDTO dto) {
-        return ResponseEntity.ok(revenueService.update(id, dto));
+    public ResponseEntity<RevenueDTO> update(@PathVariable UUID id, @RequestBody @Valid RevenueDTO dto,
+                                              Authentication authentication) {
+        return ResponseEntity.ok(revenueService.update(id, dto, authentication.getName()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
-        revenueService.delete(id);
+    public void delete(@PathVariable UUID id, Authentication authentication) {
+        revenueService.delete(id, authentication.getName());
     }
 }

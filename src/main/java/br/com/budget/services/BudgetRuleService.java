@@ -32,16 +32,16 @@ public class BudgetRuleService {
     }
 
     @Transactional(readOnly = true)
-    public FiftyThirtyTwentyDTO fiftyThirtyTwenty(final int month, final int year) {
-        final var totalRevenue = revenueService.total(month, year, null).getTotal();
+    public FiftyThirtyTwentyDTO fiftyThirtyTwenty(final int month, final int year, final String ownerUsername) {
+        final var totalRevenue = revenueService.total(month, year, null, ownerUsername).getTotal();
 
         final var essentialTarget = totalRevenue.multiply(ESSENTIAL_PERCENTAGE);
         final var personalTarget = totalRevenue.multiply(PERSONAL_PERCENTAGE);
         final var savingsTarget = totalRevenue.multiply(SAVINGS_PERCENTAGE);
 
-        final var essentialActual = sumByCategory(month, year, SpendingCategory.ESSENTIAL);
-        final var personalActual = sumByCategory(month, year, SpendingCategory.PERSONAL);
-        final var savingsActual = sumByCategory(month, year, SpendingCategory.SAVINGS);
+        final var essentialActual = sumByCategory(month, year, SpendingCategory.ESSENTIAL, ownerUsername);
+        final var personalActual = sumByCategory(month, year, SpendingCategory.PERSONAL, ownerUsername);
+        final var savingsActual = sumByCategory(month, year, SpendingCategory.SAVINGS, ownerUsername);
 
         return new FiftyThirtyTwentyDTO(
                 totalRevenue,
@@ -50,7 +50,8 @@ public class BudgetRuleService {
                 BudgetBucketDTO.of(savingsTarget, savingsActual));
     }
 
-    private BigDecimal sumByCategory(final int month, final int year, final SpendingCategory category) {
+    private BigDecimal sumByCategory(final int month, final int year, final SpendingCategory category,
+                                      final String ownerUsername) {
         final var cb = entityManager.getCriteriaBuilder();
         final var query = cb.createQuery(BigDecimal.class);
         final var root = query.from(Spending.class);
@@ -59,7 +60,8 @@ public class BudgetRuleService {
         final var to = from.plusMonths(1);
 
         query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO))
-                .where(cb.equal(root.get("type").get("category"), category),
+                .where(cb.equal(root.get("ownerUsername"), ownerUsername),
+                        cb.equal(root.get("type").get("category"), category),
                         cb.greaterThanOrEqualTo(root.get("date"), from),
                         cb.lessThan(root.get("date"), to));
 
