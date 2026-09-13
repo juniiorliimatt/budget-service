@@ -151,13 +151,14 @@ public class SpendingService {
 
     final var from = LocalDate.of(year, 1, 1);
     final var to = from.plusYears(1);
+    final var total = cb.sum(root.get("value"));
 
-    query.multiselect(type.get("id"), type.get("name"), cb.sum(root.get("value")))
+    query.multiselect(type.get("id"), type.get("name"), total)
             .where(cb.equal(root.get("ownerUsername"), ownerUsername),
                     cb.greaterThanOrEqualTo(root.get("referenceDate"), from),
                     cb.lessThan(root.get("referenceDate"), to))
             .groupBy(type.get("id"), type.get("name"))
-            .orderBy(cb.asc(type.get("name")));
+            .orderBy(cb.desc(total));
 
     return entityManager.createQuery(query).getResultList().stream()
             .map(row -> new TypeTotalDTO((UUID) row[0], (String) row[1], (BigDecimal) row[2]))
