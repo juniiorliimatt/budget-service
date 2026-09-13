@@ -1,6 +1,8 @@
 package br.com.budget.controllers;
 
 import br.com.budget.models.dto.SpendingTypeDTO;
+import br.com.budget.models.dto.SpendingTypeRevisionDTO;
+import br.com.budget.services.AuditService;
 import br.com.budget.services.SpendingTypeService;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -25,9 +27,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class SpendingTypeController {
 
     private final SpendingTypeService service;
+    private final AuditService auditService;
 
-    public SpendingTypeController(final SpendingTypeService service) {
+    public SpendingTypeController(final SpendingTypeService service, final AuditService auditService) {
         this.service = service;
+        this.auditService = auditService;
     }
 
     @GetMapping
@@ -38,6 +42,12 @@ public class SpendingTypeController {
     @GetMapping("/{id}")
     public ResponseEntity<SpendingTypeDTO> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(service.findById(id));
+    }
+
+    /** Histórico de revisões (Hibernate Envers) — catálogo global, qualquer usuário autenticado enxerga. */
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<SpendingTypeRevisionDTO>> history(@PathVariable UUID id) {
+        return ResponseEntity.ok(auditService.findSpendingTypeHistory(id));
     }
 
     @PostMapping

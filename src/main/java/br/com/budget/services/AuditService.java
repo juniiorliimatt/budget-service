@@ -2,9 +2,13 @@ package br.com.budget.services;
 
 import br.com.budget.config.audit.CustomRevisionEntity;
 import br.com.budget.models.dto.RevenueRevisionDTO;
+import br.com.budget.models.dto.RevenueTypeRevisionDTO;
 import br.com.budget.models.dto.SpendingRevisionDTO;
+import br.com.budget.models.dto.SpendingTypeRevisionDTO;
 import br.com.budget.models.entities.Revenue;
+import br.com.budget.models.entities.RevenueType;
 import br.com.budget.models.entities.Spending;
+import br.com.budget.models.entities.SpendingType;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,11 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Leitura do histórico de revisões gravado pelo Hibernate Envers (ver {@code @Audited}
- * em {@link Revenue}/{@link Spending}) — mesmo padrão do {@code AuditService} do
- * workbox-api. Diferente de lá (onde {@code /audit/**} é ADMIN-only, pois é histórico de
- * outros usuários), aqui cada lançamento pertence a um dono, então o histórico só é
- * liberado pro próprio dono - {@code revenueService.findById}/{@code spendingService.findById}
- * fazem essa checagem (404, não 403, se não for o dono) antes de consultar o Envers.
+ * em {@link Revenue}/{@link Spending}/{@link RevenueType}/{@link SpendingType}) — mesmo
+ * padrão do {@code AuditService} do workbox-api. Diferente de lá (onde {@code /audit/**}
+ * é ADMIN-only, pois é histórico de outros usuários), aqui Revenue/Spending pertencem a
+ * um dono, então o histórico só é liberado pro próprio dono -
+ * {@code revenueService.findById}/{@code spendingService.findById} fazem essa checagem
+ * (404, não 403, se não for o dono) antes de consultar o Envers. RevenueType/SpendingType
+ * são catálogos globais (sem dono) - histórico liberado pra qualquer usuário autenticado,
+ * só checando que o tipo existe.
  */
 @Service
 public class AuditService {
@@ -31,12 +38,17 @@ public class AuditService {
     private final EntityManager entityManager;
     private final RevenueService revenueService;
     private final SpendingService spendingService;
+    private final RevenueTypeService revenueTypeService;
+    private final SpendingTypeService spendingTypeService;
 
     public AuditService(final EntityManager entityManager, final RevenueService revenueService,
-                         final SpendingService spendingService) {
+                         final SpendingService spendingService, final RevenueTypeService revenueTypeService,
+                         final SpendingTypeService spendingTypeService) {
         this.entityManager = entityManager;
         this.revenueService = revenueService;
         this.spendingService = spendingService;
+        this.revenueTypeService = revenueTypeService;
+        this.spendingTypeService = spendingTypeService;
     }
 
     @Transactional(readOnly = true)
@@ -99,6 +111,63 @@ public class AuditService {
                             snapshot.getDate(),
                             snapshot.getReferenceDate(),
                             snapshot.getWasPaid());
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<RevenueTypeRevisionDTO> findRevenueTypeHistory(final UUID id) {
+        revenueTypeService.findById(id);
+
+        final var reader = AuditReaderFactory.get(entityManager);
+        final List<Object[]> rows = reader.createQuery()
+                .forRevisionsOfEntity(RevenueType.class, false, true)
+                .add(AuditEntity.id().eq(id))
+                .addOrder(AuditEntity.revisionNumber().asc())
+                .getResultList();
+
+        return rows.stream()
+                .map(row -> {
+                    final var snapshot = (RevenueType) row[0];
+                    final var revisionEntity = (CustomRevisionEntity) row[1];
+                    final var revisionType = (RevisionType) row[2];
+                    return new RevenueTypeRevisionDTO(
+                            revisionEntity.getId(),
+                            toLocalDateTime(revisionEntity.getTimestamp()),
+                            revisionEntity.getUsername(),
+                            revisionType.name(),
+                            snapshot.getId(),
+                            snapshot.getName());
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<SpendingTypeRevisionDTO> findSpendingTypeHistory(final UUID id) {
+        spendingTypeService.findById(id);
+
+        final var reader = AuditReaderFactory.get(entityManager);
+        final List<Object[]> rows = reader.createQuery()
+                .forRevisionsOfEntity(SpendingType.class, false, true)
+                .add(AuditEntity.id().eq(id))
+                .addOrder(AuditEntity.revisionNumber().asc())
+                .getResultList();
+
+        return rows.stream()
+                .map(row -> {
+                    final var snapshot = (SpendingType) row[0];
+                    final var revisionEntity = (CustomRevisionEntity) row[1];
+                    final var revisionType = (RevisionType) row[2];
+                    return new SpendingTypeRevisionDTO(
+                            revisionEntity.getId(),
+                            toLocalDateTime(revisionEntity.getTimestamp()),
+                            revisionEntity.getUsername(),
+                            revisionType.name(),
+                            snapshot.getId(),
+                            snapshot.getName(),
+                            snapshot.getCategory());
                 })
                 .toList();
     }

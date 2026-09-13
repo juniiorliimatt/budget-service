@@ -152,6 +152,27 @@ paths:
           description: OK
       tags:
       - revenue-type-controller
+  /api/v1/revenue-types/{id}/history:
+    get:
+      operationId: history_3
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueTypeRevisionDTO"
+          description: OK
+      tags:
+      - revenue-type-controller
   /api/v1/revenues:
     get:
       operationId: search_1
@@ -295,7 +316,7 @@ paths:
       - revenue-controller
   /api/v1/revenues/{id}/history:
     get:
-      operationId: history_1
+      operationId: history_2
       parameters:
       - in: path
         name: id
@@ -399,6 +420,27 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/SpendingTypeDTO"
+          description: OK
+      tags:
+      - spending-type-controller
+  /api/v1/spending-types/{id}/history:
+    get:
+      operationId: history_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpendingTypeRevisionDTO"
           description: OK
       tags:
       - spending-type-controller
@@ -757,6 +799,24 @@ components:
           minLength: 1
       required:
       - name
+    RevenueTypeRevisionDTO:
+      type: object
+      properties:
+        changedAt:
+          type: string
+          format: date-time
+        changedBy:
+          type: string
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        revision:
+          type: integer
+          format: int32
+        revisionType:
+          type: string
     SortObject:
       type: object
       properties:
@@ -845,6 +905,30 @@ components:
       required:
       - category
       - name
+    SpendingTypeRevisionDTO:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+          - ESSENTIAL
+          - PERSONAL
+          - SAVINGS
+        changedAt:
+          type: string
+          format: date-time
+        changedBy:
+          type: string
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        revision:
+          type: integer
+          format: int32
+        revisionType:
+          type: string
     TotalDTO:
       type: object
       properties:

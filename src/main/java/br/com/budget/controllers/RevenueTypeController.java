@@ -1,6 +1,8 @@
 package br.com.budget.controllers;
 
 import br.com.budget.models.dto.RevenueTypeDTO;
+import br.com.budget.models.dto.RevenueTypeRevisionDTO;
+import br.com.budget.services.AuditService;
 import br.com.budget.services.RevenueTypeService;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -25,9 +27,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class RevenueTypeController {
 
     private final RevenueTypeService service;
+    private final AuditService auditService;
 
-    public RevenueTypeController(final RevenueTypeService service) {
+    public RevenueTypeController(final RevenueTypeService service, final AuditService auditService) {
         this.service = service;
+        this.auditService = auditService;
     }
 
     @GetMapping
@@ -38,6 +42,12 @@ public class RevenueTypeController {
     @GetMapping("/{id}")
     public ResponseEntity<RevenueTypeDTO> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(service.findById(id));
+    }
+
+    /** Histórico de revisões (Hibernate Envers) — catálogo global, qualquer usuário autenticado enxerga. */
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<RevenueTypeRevisionDTO>> history(@PathVariable UUID id) {
+        return ResponseEntity.ok(auditService.findRevenueTypeHistory(id));
     }
 
     @PostMapping

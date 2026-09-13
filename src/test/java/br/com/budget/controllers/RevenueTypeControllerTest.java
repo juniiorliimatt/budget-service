@@ -10,8 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.com.budget.models.dto.RevenueTypeDTO;
+import br.com.budget.models.dto.RevenueTypeRevisionDTO;
+import br.com.budget.services.AuditService;
 import br.com.budget.services.RevenueTypeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -38,6 +41,9 @@ class RevenueTypeControllerTest {
 
     @MockitoBean
     private RevenueTypeService service;
+
+    @MockitoBean
+    private AuditService auditService;
 
     @Test
     void findAll_withoutAuth_returnsUnauthorized() throws Exception {
@@ -72,5 +78,17 @@ class RevenueTypeControllerTest {
         mockMvc.perform(delete(API_V1_REVENUE_TYPES + "/" + UUID.randomUUID())
                         .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void history_withAuth_returnsRevisions() throws Exception {
+        var id = UUID.randomUUID();
+        var revision = new RevenueTypeRevisionDTO(1, LocalDateTime.now(), "qa.admin@workbox.local", "ADD", id, "Salário");
+        when(auditService.findRevenueTypeHistory(id)).thenReturn(List.of(revision));
+
+        mockMvc.perform(get(API_V1_REVENUE_TYPES + "/" + id + "/history")
+                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Salário"));
     }
 }

@@ -10,9 +10,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.com.budget.models.dto.SpendingTypeDTO;
+import br.com.budget.models.dto.SpendingTypeRevisionDTO;
 import br.com.budget.models.enums.SpendingCategory;
+import br.com.budget.services.AuditService;
 import br.com.budget.services.SpendingTypeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -39,6 +42,9 @@ class SpendingTypeControllerTest {
 
     @MockitoBean
     private SpendingTypeService service;
+
+    @MockitoBean
+    private AuditService auditService;
 
     @Test
     void findAll_withoutAuth_returnsUnauthorized() throws Exception {
@@ -73,5 +79,17 @@ class SpendingTypeControllerTest {
         mockMvc.perform(delete(API_V1_SPENDING_TYPES + "/" + UUID.randomUUID())
                         .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void history_withAuth_returnsRevisions() throws Exception {
+        var id = UUID.randomUUID();
+        var revision = new SpendingTypeRevisionDTO(1, LocalDateTime.now(), "qa.admin@workbox.local", "ADD", id, "Mercado", SpendingCategory.ESSENTIAL);
+        when(auditService.findSpendingTypeHistory(id)).thenReturn(List.of(revision));
+
+        mockMvc.perform(get(API_V1_SPENDING_TYPES + "/" + id + "/history")
+                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Mercado"));
     }
 }
