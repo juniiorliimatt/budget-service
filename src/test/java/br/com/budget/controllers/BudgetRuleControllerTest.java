@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.budget.models.dto.BudgetBucketDTO;
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
+import br.com.budget.models.dto.MonthlySummaryDTO;
 import br.com.budget.services.BudgetRuleService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @ActiveProfiles("test")
 @WebMvcTest(BudgetRuleController.class)
@@ -32,6 +34,12 @@ class BudgetRuleControllerTest {
 
     @MockitoBean
     private BudgetRuleService budgetRuleService;
+
+    private RequestPostProcessor auth() {
+        return opaqueToken()
+                .attributes(attrs -> attrs.put("sub", OWNER))
+                .authorities(new SimpleGrantedAuthority("ROLE_USER"));
+    }
 
     @Test
     void fiftyThirtyTwenty_withoutAuth_returnsUnauthorized() throws Exception {
@@ -51,13 +59,36 @@ class BudgetRuleControllerTest {
         mockMvc.perform(get(API_V1_BUDGET_RULES + "/fifty-thirty-twenty")
                         .param("month", "9")
                         .param("year", "2026")
-                        .with(opaqueToken()
-                                .attributes(attrs -> attrs.put("sub", OWNER))
-                                .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                        .with(auth()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalRevenue").value(1000))
                 .andExpect(jsonPath("$.essential.difference").value(100))
                 .andExpect(jsonPath("$.personal.difference").value(-100))
                 .andExpect(jsonPath("$.savings.difference").value(0));
+    }
+
+    @Test
+    void monthlySummary_withoutAuth_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-summary").param("month", "9").param("year", "2026"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void monthlySummary_withAuth_returnsSummary() throws Exception {
+        var dto = new MonthlySummaryDTO(
+                BigDecimal.valueOf(5000), BigDecimal.valueOf(3200),
+                BigDecimal.valueOf(2000), BigDecimal.valueOf(1200), BigDecimal.valueOf(1800));
+        when(budgetRuleService.monthlySummary(9, 2026, OWNER)).thenReturn(dto);
+
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-summary")
+                        .param("month", "9")
+                        .param("year", "2026")
+                        .with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalRevenue").value(5000))
+                .andExpect(jsonPath("$.totalSpending").value(3200))
+                .andExpect(jsonPath("$.totalPaid").value(2000))
+                .andExpect(jsonPath("$.totalPending").value(1200))
+                .andExpect(jsonPath("$.projectedBalance").value(1800));
     }
 }

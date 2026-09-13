@@ -1,6 +1,7 @@
 package br.com.budget.controllers;
 
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
+import br.com.budget.models.dto.MonthlySummaryDTO;
 import br.com.budget.services.BudgetRuleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,5 +25,11 @@ public class BudgetRuleController {
     public ResponseEntity<FiftyThirtyTwentyDTO> fiftyThirtyTwenty(@RequestParam int month, @RequestParam int year,
                                                                    Authentication authentication) {
         return ResponseEntity.ok(budgetRuleService.fiftyThirtyTwenty(month, year, authentication.getName()));
+    }
+
+    @GetMapping("/monthly-summary")
+    public ResponseEntity<MonthlySummaryDTO> monthlySummary(@RequestParam int month, @RequestParam int year,
+                                                              Authentication authentication) {
+        return ResponseEntity.ok(budgetRuleService.monthlySummary(month, year, authentication.getName()));
     }
 }

@@ -2,6 +2,7 @@ package br.com.budget.services;
 
 import br.com.budget.models.dto.BudgetBucketDTO;
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
+import br.com.budget.models.dto.MonthlySummaryDTO;
 import br.com.budget.models.entities.Spending;
 import br.com.budget.models.enums.SpendingCategory;
 import jakarta.persistence.EntityManager;
@@ -24,10 +25,13 @@ public class BudgetRuleService {
     private static final BigDecimal SAVINGS_PERCENTAGE = new BigDecimal("0.20");
 
     private final RevenueService revenueService;
+    private final SpendingService spendingService;
     private final EntityManager entityManager;
 
-    public BudgetRuleService(final RevenueService revenueService, final EntityManager entityManager) {
+    public BudgetRuleService(final RevenueService revenueService, final SpendingService spendingService,
+                              final EntityManager entityManager) {
         this.revenueService = revenueService;
+        this.spendingService = spendingService;
         this.entityManager = entityManager;
     }
 
@@ -62,6 +66,39 @@ public class BudgetRuleService {
         query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO))
                 .where(cb.equal(root.get("ownerUsername"), ownerUsername),
                         cb.equal(root.get("type").get("category"), category),
+                        cb.greaterThanOrEqualTo(root.get("referenceDate"), from),
+                        cb.lessThan(root.get("referenceDate"), to));
+
+        return entityManager.createQuery(query).getSingleResult();
+    }
+
+    /**
+     * {@code totalPending = totalSpending - totalPaid} (evita uma terceira query) e
+     * {@code projectedBalance = totalRevenue - totalSpending} — previsão de saldo do
+     * mês assumindo que toda despesa em aberto será quitada dentro do próprio mês.
+     */
+    @Transactional(readOnly = true)
+    public MonthlySummaryDTO monthlySummary(final int month, final int year, final String ownerUsername) {
+        final var totalRevenue = revenueService.total(month, year, null, ownerUsername).getTotal();
+        final var totalSpending = spendingService.total(month, year, null, ownerUsername).getTotal();
+        final var totalPaid = sumByPaidStatus(month, year, ownerUsername, true);
+        final var totalPending = totalSpending.subtract(totalPaid);
+        final var projectedBalance = totalRevenue.subtract(totalSpending);
+
+        return new MonthlySummaryDTO(totalRevenue, totalSpending, totalPaid, totalPending, projectedBalance);
+    }
+
+    private BigDecimal sumByPaidStatus(final int month, final int year, final String ownerUsername, final boolean wasPaid) {
+        final var cb = entityManager.getCriteriaBuilder();
+        final var query = cb.createQuery(BigDecimal.class);
+        final var root = query.from(Spending.class);
+
+        final var from = LocalDate.of(year, month, 1);
+        final var to = from.plusMonths(1);
+
+        query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO))
+                .where(cb.equal(root.get("ownerUsername"), ownerUsername),
+                        cb.equal(root.get("wasPaid"), wasPaid),
                         cb.greaterThanOrEqualTo(root.get("referenceDate"), from),
                         cb.lessThan(root.get("referenceDate"), to));
 
