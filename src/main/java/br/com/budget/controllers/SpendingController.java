@@ -8,6 +8,8 @@ import java.net.URI;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -44,6 +46,7 @@ public class SpendingController {
   public ResponseEntity<Page<SpendingDTO>> search(@RequestParam(required = false) Integer month,
                                                     @RequestParam(required = false) Integer year,
                                                     @RequestParam(required = false) UUID typeId,
+                                                    @PageableDefault(sort = {"date", "referenceDate"}, direction = Sort.Direction.DESC)
                                                     Pageable pageable, Authentication authentication) {
     return ResponseEntity.ok(spendingService.search(month, year, typeId, authentication.getName(), pageable));
   }
