@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -44,6 +45,17 @@ public class RevenueType {
     @NotBlank(message = "Required field name")
     @Column(nullable = false, unique = true, length = 50)
     private String name;
+
+    /**
+     * Controla se este tipo entra na soma agrupada por tipo (endpoints {@code by-type})
+     * — ex.: "Caixinha" é sobra de salário de mês anterior recolocada como receita, já
+     * contabilizada dentro do próprio "Salário" quando entrou; incluir de novo aqui
+     * duplicaria o valor na tela de metas. Não afeta o total geral (mês/ano), só o
+     * agrupamento por tipo. Default {@code true} quando omitido no insert/update.
+     */
+    @NotNull(message = "Required field includeInTotals")
+    @Column(name = "include_in_totals", nullable = false)
+    private Boolean includeInTotals;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

@@ -154,6 +154,7 @@ public class RevenueService {
 
         query.multiselect(type.get("id"), type.get("name"), total)
                 .where(cb.equal(root.get("ownerUsername"), ownerUsername),
+                        cb.isTrue(type.get("includeInTotals")),
                         cb.greaterThanOrEqualTo(root.get("referenceDate"), from),
                         cb.lessThan(root.get("referenceDate"), to))
                 .groupBy(type.get("id"), type.get("name"))

@@ -52,7 +52,7 @@ class RevenueTypeControllerTest {
 
     @Test
     void findAll_withAuth_returnsList() throws Exception {
-        when(service.findAll()).thenReturn(List.of(new RevenueTypeDTO(UUID.randomUUID(), "Salário")));
+        when(service.findAll()).thenReturn(List.of(new RevenueTypeDTO(UUID.randomUUID(), "Salário", true)));
 
         mockMvc.perform(get(API_V1_REVENUE_TYPES)
                         .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
@@ -62,7 +62,7 @@ class RevenueTypeControllerTest {
 
     @Test
     void save_withValidBody_returnsCreated() throws Exception {
-        var dto = new RevenueTypeDTO(UUID.randomUUID(), "Freelance");
+        var dto = new RevenueTypeDTO(UUID.randomUUID(), "Freelance", true);
         when(service.save(any())).thenReturn(dto);
 
         mockMvc.perform(post(API_V1_REVENUE_TYPES)
@@ -83,7 +83,7 @@ class RevenueTypeControllerTest {
     @Test
     void history_withAuth_returnsRevisions() throws Exception {
         var id = UUID.randomUUID();
-        var revision = new RevenueTypeRevisionDTO(1, LocalDateTime.now(), "qa.admin@workbox.local", "ADD", id, "Salário");
+        var revision = new RevenueTypeRevisionDTO(1, LocalDateTime.now(), "qa.admin@workbox.local", "ADD", id, "Salário", true);
         when(auditService.findRevenueTypeHistory(id)).thenReturn(List.of(revision));
 
         mockMvc.perform(get(API_V1_REVENUE_TYPES + "/" + id + "/history")

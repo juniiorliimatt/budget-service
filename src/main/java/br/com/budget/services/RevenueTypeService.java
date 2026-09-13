@@ -37,7 +37,8 @@ public class RevenueTypeService {
         if (repository.existsByNameIgnoreCase(dto.name())) {
             throw new DuplicateResourceException("Revenue type already exists: " + dto.name());
         }
-        final var saved = repository.save(RevenueType.builder().name(dto.name()).build());
+        final var saved = repository.save(RevenueType.builder().name(dto.name())
+                .includeInTotals(dto.includeInTotals() == null || dto.includeInTotals()).build());
         return RevenueTypeDTO.from(saved);
     }
 
@@ -48,6 +49,10 @@ public class RevenueTypeService {
             throw new DuplicateResourceException("Revenue type already exists: " + dto.name());
         }
         entity.setName(dto.name());
+        // omitido no PUT preserva o valor atual, nunca reseta pra true silenciosamente.
+        if (dto.includeInTotals() != null) {
+            entity.setIncludeInTotals(dto.includeInTotals());
+        }
         return RevenueTypeDTO.from(repository.save(entity));
     }
 

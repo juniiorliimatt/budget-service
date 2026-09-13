@@ -10,5 +10,6 @@ public record RevenueTypeRevisionDTO(
         String changedBy,
         String revisionType,
         UUID id,
-        String name) {
+        String name,
+        Boolean includeInTotals) {
 }

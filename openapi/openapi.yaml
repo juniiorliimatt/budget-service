@@ -906,6 +906,8 @@ components:
         id:
           type: string
           format: uuid
+        includeInTotals:
+          type: boolean
         name:
           type: string
           minLength: 1
@@ -922,6 +924,8 @@ components:
         id:
           type: string
           format: uuid
+        includeInTotals:
+          type: boolean
         name:
           type: string
         revision:
