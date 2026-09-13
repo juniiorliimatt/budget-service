@@ -3,6 +3,7 @@ package br.com.budget.services;
 import br.com.budget.models.dto.BudgetBucketDTO;
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
 import br.com.budget.models.dto.MonthlySummaryDTO;
+import br.com.budget.models.dto.YearlySummaryDTO;
 import br.com.budget.models.entities.Spending;
 import br.com.budget.models.enums.SpendingCategory;
 import jakarta.persistence.EntityManager;
@@ -86,6 +87,14 @@ public class BudgetRuleService {
         final var projectedBalance = totalRevenue.subtract(totalSpending);
 
         return new MonthlySummaryDTO(totalRevenue, totalSpending, totalPaid, totalPending, projectedBalance);
+    }
+
+    /** Resumo do ano inteiro (competência) — base da tela de metas. */
+    @Transactional(readOnly = true)
+    public YearlySummaryDTO yearlySummary(final int year, final String ownerUsername) {
+        final var totalRevenue = revenueService.total(null, year, null, ownerUsername).getTotal();
+        final var totalSpending = spendingService.total(null, year, null, ownerUsername).getTotal();
+        return new YearlySummaryDTO(totalRevenue, totalSpending, totalRevenue.subtract(totalSpending));
     }
 
     private BigDecimal sumByPaidStatus(final int month, final int year, final String ownerUsername, final boolean wasPaid) {

@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.budget.models.dto.BudgetBucketDTO;
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
 import br.com.budget.models.dto.MonthlySummaryDTO;
+import br.com.budget.models.dto.YearlySummaryDTO;
 import br.com.budget.services.BudgetRuleService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
@@ -90,5 +91,25 @@ class BudgetRuleControllerTest {
                 .andExpect(jsonPath("$.totalPaid").value(2000))
                 .andExpect(jsonPath("$.totalPending").value(1200))
                 .andExpect(jsonPath("$.projectedBalance").value(1800));
+    }
+
+    @Test
+    void yearlySummary_withoutAuth_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/yearly-summary").param("year", "2026"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void yearlySummary_withAuth_returnsSummary() throws Exception {
+        var dto = new YearlySummaryDTO(BigDecimal.valueOf(60000), BigDecimal.valueOf(42000), BigDecimal.valueOf(18000));
+        when(budgetRuleService.yearlySummary(2026, OWNER)).thenReturn(dto);
+
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/yearly-summary")
+                        .param("year", "2026")
+                        .with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalRevenue").value(60000))
+                .andExpect(jsonPath("$.totalSpending").value(42000))
+                .andExpect(jsonPath("$.balance").value(18000));
     }
 }

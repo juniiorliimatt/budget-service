@@ -4,6 +4,7 @@ import br.com.budget.models.dto.RevenueBatchRequestDTO;
 import br.com.budget.models.dto.RevenueDTO;
 import br.com.budget.models.dto.RevenueRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.models.dto.TypeTotalDTO;
 import br.com.budget.services.AuditService;
 import br.com.budget.services.RevenueService;
 import jakarta.validation.Valid;
@@ -75,6 +76,12 @@ public class RevenueController {
                                            @RequestParam(required = false) UUID typeId,
                                            Authentication authentication) {
         return ResponseEntity.ok(revenueService.total(month, year, typeId, authentication.getName()));
+    }
+
+    /** Soma agrupada por tipo no ano inteiro (ex.: total de "Salário" em 2026) — tela de metas. */
+    @GetMapping("/by-type")
+    public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam int year, Authentication authentication) {
+        return ResponseEntity.ok(revenueService.totalByType(year, authentication.getName()));
     }
 
     @PostMapping

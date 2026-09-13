@@ -3,6 +3,7 @@ package br.com.budget.services;
 import br.com.budget.exceptions.ResourceNotFoundException;
 import br.com.budget.models.dto.SpendingDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.models.dto.TypeTotalDTO;
 import br.com.budget.models.entities.Spending;
 import br.com.budget.models.entities.SpendingType;
 import br.com.budget.repositories.SpendingRepository;
@@ -128,11 +129,39 @@ public class SpendingService {
       final var to = from.plusMonths(1);
       predicates.add(cb.greaterThanOrEqualTo(root.get("referenceDate"), from));
       predicates.add(cb.lessThan(root.get("referenceDate"), to));
+    } else if (year != null) {
+      final var from = LocalDate.of(year, 1, 1);
+      final var to = from.plusYears(1);
+      predicates.add(cb.greaterThanOrEqualTo(root.get("referenceDate"), from));
+      predicates.add(cb.lessThan(root.get("referenceDate"), to));
     }
     if (typeId != null) {
       predicates.add(cb.equal(root.get("type").get("id"), typeId));
     }
     return predicates;
+  }
+
+  /** Soma agrupada por tipo no ano inteiro (competência) — base da tela de metas. */
+  @Transactional(readOnly = true)
+  public List<TypeTotalDTO> totalByType(final int year, final String ownerUsername) {
+    final var cb = entityManager.getCriteriaBuilder();
+    final var query = cb.createQuery(Object[].class);
+    final var root = query.from(Spending.class);
+    final var type = root.join("type");
+
+    final var from = LocalDate.of(year, 1, 1);
+    final var to = from.plusYears(1);
+
+    query.multiselect(type.get("id"), type.get("name"), cb.sum(root.get("value")))
+            .where(cb.equal(root.get("ownerUsername"), ownerUsername),
+                    cb.greaterThanOrEqualTo(root.get("referenceDate"), from),
+                    cb.lessThan(root.get("referenceDate"), to))
+            .groupBy(type.get("id"), type.get("name"))
+            .orderBy(cb.asc(type.get("name")));
+
+    return entityManager.createQuery(query).getResultList().stream()
+            .map(row -> new TypeTotalDTO((UUID) row[0], (String) row[1], (BigDecimal) row[2]))
+            .toList();
   }
 
   private Spending findEntityById(final UUID id, final String ownerUsername) {

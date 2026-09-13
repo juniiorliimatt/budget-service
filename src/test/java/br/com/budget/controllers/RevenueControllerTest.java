@@ -15,6 +15,7 @@ import br.com.budget.models.dto.RevenueBatchRequestDTO;
 import br.com.budget.models.dto.RevenueDTO;
 import br.com.budget.models.dto.RevenueRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.models.dto.TypeTotalDTO;
 import br.com.budget.services.AuditService;
 import br.com.budget.services.RevenueService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -170,6 +171,17 @@ class RevenueControllerTest {
                         .contentType("application/json")
                         .content("[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":100,\"date\":\"2026-09-01\"}]"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void totalByType_withAuth_returnsGroupedTotals() throws Exception {
+        var typeId = UUID.randomUUID();
+        when(revenueService.totalByType(2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Salário", BigDecimal.valueOf(60000))));
+
+        mockMvc.perform(get(API_V1_REVENUES + "/by-type").param("year", "2026").with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].typeName").value("Salário"))
+                .andExpect(jsonPath("$[0].total").value(60000));
     }
 
     @Test

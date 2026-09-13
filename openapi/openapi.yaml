@@ -64,6 +64,25 @@ paths:
           description: OK
       tags:
       - budget-rule-controller
+  /api/v1/budget-rules/yearly-summary:
+    get:
+      operationId: yearlySummary
+      parameters:
+      - in: query
+        name: year
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/YearlySummaryDTO"
+          description: OK
+      tags:
+      - budget-rule-controller
   /api/v1/revenue-types:
     get:
       operationId: findAll_1
@@ -244,6 +263,27 @@ paths:
                 items:
                   $ref: "#/components/schemas/RevenueDTO"
           description: Created
+      tags:
+      - revenue-controller
+  /api/v1/revenues/by-type:
+    get:
+      operationId: totalByType_1
+      parameters:
+      - in: query
+        name: year
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TypeTotalDTO"
+          description: OK
       tags:
       - revenue-controller
   /api/v1/revenues/total:
@@ -535,6 +575,27 @@ paths:
                 items:
                   $ref: "#/components/schemas/SpendingDTO"
           description: Created
+      tags:
+      - spending-controller
+  /api/v1/spendings/by-type:
+    get:
+      operationId: totalByType
+      parameters:
+      - in: query
+        name: year
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TypeTotalDTO"
+          description: OK
       tags:
       - spending-controller
   /api/v1/spendings/total:
@@ -995,6 +1056,25 @@ components:
       type: object
       properties:
         total:
+          type: number
+    TypeTotalDTO:
+      type: object
+      properties:
+        total:
+          type: number
+        typeId:
+          type: string
+          format: uuid
+        typeName:
+          type: string
+    YearlySummaryDTO:
+      type: object
+      properties:
+        balance:
+          type: number
+        totalRevenue:
+          type: number
+        totalSpending:
           type: number
   securitySchemes:
     bearer-jwt:

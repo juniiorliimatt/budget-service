@@ -15,6 +15,7 @@ import br.com.budget.models.dto.SpendingBatchRequestDTO;
 import br.com.budget.models.dto.SpendingDTO;
 import br.com.budget.models.dto.SpendingRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.models.dto.TypeTotalDTO;
 import br.com.budget.services.AuditService;
 import br.com.budget.services.SpendingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -160,6 +161,17 @@ class SpendingControllerTest {
                         .contentType("application/json")
                         .content(mapper.writeValueAsString(batch)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void totalByType_withAuth_returnsGroupedTotals() throws Exception {
+        var typeId = UUID.randomUUID();
+        when(spendingService.totalByType(2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Condomínio", BigDecimal.valueOf(9600))));
+
+        mockMvc.perform(get(API_V1_SPENDINGS + "/by-type").param("year", "2026").with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].typeName").value("Condomínio"))
+                .andExpect(jsonPath("$[0].total").value(9600));
     }
 
     @Test

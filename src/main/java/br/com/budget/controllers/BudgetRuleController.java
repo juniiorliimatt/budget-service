@@ -2,6 +2,7 @@ package br.com.budget.controllers;
 
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
 import br.com.budget.models.dto.MonthlySummaryDTO;
+import br.com.budget.models.dto.YearlySummaryDTO;
 import br.com.budget.services.BudgetRuleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -31,5 +32,11 @@ public class BudgetRuleController {
     public ResponseEntity<MonthlySummaryDTO> monthlySummary(@RequestParam int month, @RequestParam int year,
                                                               Authentication authentication) {
         return ResponseEntity.ok(budgetRuleService.monthlySummary(month, year, authentication.getName()));
+    }
+
+    /** Total de receitas, despesas e saldo do ano inteiro — base da tela de metas. */
+    @GetMapping("/yearly-summary")
+    public ResponseEntity<YearlySummaryDTO> yearlySummary(@RequestParam int year, Authentication authentication) {
+        return ResponseEntity.ok(budgetRuleService.yearlySummary(year, authentication.getName()));
     }
 }

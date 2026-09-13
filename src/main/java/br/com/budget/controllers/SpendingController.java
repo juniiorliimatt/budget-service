@@ -4,6 +4,7 @@ import br.com.budget.models.dto.SpendingBatchRequestDTO;
 import br.com.budget.models.dto.SpendingDTO;
 import br.com.budget.models.dto.SpendingRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.models.dto.TypeTotalDTO;
 import br.com.budget.services.AuditService;
 import br.com.budget.services.SpendingService;
 import jakarta.validation.Valid;
@@ -75,6 +76,12 @@ public class SpendingController {
                                          @RequestParam(required = false) UUID typeId,
                                          Authentication authentication) {
     return ResponseEntity.ok(spendingService.total(month, year, typeId, authentication.getName()));
+  }
+
+  /** Soma agrupada por tipo no ano inteiro (ex.: total de "Condomínio" em 2026) — tela de metas. */
+  @GetMapping("/by-type")
+  public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam int year, Authentication authentication) {
+    return ResponseEntity.ok(spendingService.totalByType(year, authentication.getName()));
   }
 
   @PostMapping
