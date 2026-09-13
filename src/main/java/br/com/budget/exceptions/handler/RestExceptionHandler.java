@@ -1,9 +1,11 @@
 package br.com.budget.exceptions.handler;
 
+import br.com.budget.exceptions.DuplicateResourceException;
 import br.com.budget.exceptions.ResourceNotFoundException;
 import br.com.budget.exceptions.models.ErrorResponse;
 import br.com.budget.exceptions.models.FieldError;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -19,6 +21,17 @@ public class RestExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException e, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, e, request, null);
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateResourceException e, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, e, request, null);
+    }
+
+    /** Ex.: tentar apagar um tipo de receita/despesa ainda referenciado por algum lançamento. */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, e, request, null);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

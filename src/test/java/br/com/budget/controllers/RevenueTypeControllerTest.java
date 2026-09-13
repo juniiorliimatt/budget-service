@@ -1,26 +1,22 @@
-package br.com.budget.revenue.controllers;
+package br.com.budget.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.opaqueToken;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import br.com.budget.revenue.dto.RevenueDTO;
-import br.com.budget.revenue.services.RevenueService;
+import br.com.budget.models.dto.RevenueTypeDTO;
+import br.com.budget.services.RevenueTypeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,11 +24,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @ActiveProfiles("test")
-@WebMvcTest(RevenueController.class)
+@WebMvcTest(RevenueTypeController.class)
 @MockitoBean(types = JpaMetamodelMappingContext.class)
-class RevenueControllerTest {
+class RevenueTypeControllerTest {
 
-    final private static String API_V1_REVENUES = "/api/v1/revenues";
+    private static final String API_V1_REVENUE_TYPES = "/api/v1/revenue-types";
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,37 +37,40 @@ class RevenueControllerTest {
     private ObjectMapper mapper;
 
     @MockitoBean
-    private RevenueService revenueService;
+    private RevenueTypeService service;
 
     @Test
     void findAll_withoutAuth_returnsUnauthorized() throws Exception {
-        mockMvc.perform(get(API_V1_REVENUES)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(API_V1_REVENUE_TYPES)).andExpect(status().isUnauthorized());
     }
 
     @Test
-    void findAll_withAuth_returnsPage() throws Exception {
-        var dto = new RevenueDTO(UUID.randomUUID(), "Salary", BigDecimal.valueOf(5000), LocalDate.now());
-        Page<RevenueDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
-        when(revenueService.findAll(any())).thenReturn(page);
+    void findAll_withAuth_returnsList() throws Exception {
+        when(service.findAll()).thenReturn(List.of(new RevenueTypeDTO(UUID.randomUUID(), "Salário")));
 
-        mockMvc.perform(
-            get(API_V1_REVENUES)
-                .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER")))
-            ).andExpect(status().isOk()).andExpect(jsonPath("$.content[0].name").value("Salary"));
+        mockMvc.perform(get(API_V1_REVENUE_TYPES)
+                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Salário"));
     }
 
     @Test
     void save_withValidBody_returnsCreated() throws Exception {
-        var id = UUID.randomUUID();
-        var dto = new RevenueDTO(id, "Freelance", BigDecimal.valueOf(1200), LocalDate.now());
-        when(revenueService.save(any())).thenReturn(dto);
+        var dto = new RevenueTypeDTO(UUID.randomUUID(), "Freelance");
+        when(service.save(any())).thenReturn(dto);
 
-        mockMvc.perform(post(API_V1_REVENUES)
-                .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER")))
+        mockMvc.perform(post(API_V1_REVENUE_TYPES)
+                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER")))
                         .contentType("application/json")
-                        .content(mapper.writeValueAsString(
-                                new br.com.budget.revenue.dto.RevenueInsertOrUpdateDTO("Freelance", BigDecimal.valueOf(1200), LocalDate.now()))))
+                        .content(mapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Freelance"));
+    }
+
+    @Test
+    void delete_withAuth_returnsNoContent() throws Exception {
+        mockMvc.perform(delete(API_V1_REVENUE_TYPES + "/" + UUID.randomUUID())
+                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isNoContent());
     }
 }

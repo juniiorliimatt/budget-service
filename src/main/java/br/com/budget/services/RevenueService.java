@@ -1,0 +1,122 @@
+package br.com.budget.services;
+
+import br.com.budget.exceptions.ResourceNotFoundException;
+import br.com.budget.models.dto.RevenueDTO;
+import br.com.budget.models.dto.TotalDTO;
+import br.com.budget.models.entities.Revenue;
+import br.com.budget.models.entities.RevenueType;
+import br.com.budget.repositories.RevenueRepository;
+import br.com.budget.repositories.RevenueTypeRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Busca de receitas é sempre por mês/ano + tipo (ambos opcionais, combináveis). Mês/ano
+ * vira um intervalo {@code [primeiro dia do mês, primeiro dia do mês seguinte)} —
+ * comparação simples de coluna (sargável, portável entre H2/Postgres), evitando
+ * funções tipo {@code MONTH()}/{@code EXTRACT()} que ou não existem em algum dos dois
+ * bancos ou impedem o uso de índice.
+ */
+@Service
+public class RevenueService {
+
+    private static final String REVENUE_NOT_FOUND = "Revenue not found";
+    private static final String REVENUE_TYPE_NOT_FOUND = "Revenue type not found";
+
+    private final RevenueRepository revenueRepository;
+    private final RevenueTypeRepository revenueTypeRepository;
+    private final EntityManager entityManager;
+
+    public RevenueService(final RevenueRepository revenueRepository,
+                           final RevenueTypeRepository revenueTypeRepository,
+                           final EntityManager entityManager) {
+        this.revenueRepository = revenueRepository;
+        this.revenueTypeRepository = revenueTypeRepository;
+        this.entityManager = entityManager;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RevenueDTO> search(final Integer month, final Integer year, final UUID typeId, final Pageable pageable) {
+        final Specification<Revenue> spec = (root, query, cb) ->
+                cb.and(buildPredicates(root, cb, month, year, typeId).toArray(new Predicate[0]));
+        return revenueRepository.findAll(spec, pageable).map(RevenueDTO::from);
+    }
+
+    @Transactional(readOnly = true)
+    public RevenueDTO findById(final UUID id) {
+        return RevenueDTO.from(findEntityById(id));
+    }
+
+    @Transactional
+    public RevenueDTO save(final RevenueDTO dto) {
+        final var revenue = Revenue.builder()
+                .type(requireType(dto.typeId()))
+                .value(dto.value())
+                .date(dto.date())
+                .build();
+        return RevenueDTO.from(revenueRepository.save(revenue));
+    }
+
+    @Transactional
+    public RevenueDTO update(final UUID id, final RevenueDTO dto) {
+        final var revenue = findEntityById(id);
+        revenue.setType(requireType(dto.typeId()));
+        revenue.setValue(dto.value());
+        revenue.setDate(dto.date());
+        return RevenueDTO.from(revenueRepository.save(revenue));
+    }
+
+    @Transactional
+    public void delete(final UUID id) {
+        revenueRepository.delete(findEntityById(id));
+    }
+
+    /** Total por mês/ano e/ou tipo (mesmos filtros de {@link #search}, ambos opcionais). */
+    @Transactional(readOnly = true)
+    public TotalDTO total(final Integer month, final Integer year, final UUID typeId) {
+        final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        final var query = cb.createQuery(BigDecimal.class);
+        final Root<Revenue> root = query.from(Revenue.class);
+        final var predicates = buildPredicates(root, cb, month, year, typeId);
+        query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO));
+        if (!predicates.isEmpty()) {
+            query.where(predicates.toArray(new Predicate[0]));
+        }
+        return new TotalDTO(entityManager.createQuery(query).getSingleResult());
+    }
+
+    private List<Predicate> buildPredicates(final Root<Revenue> root, final CriteriaBuilder cb,
+                                             final Integer month, final Integer year, final UUID typeId) {
+        final List<Predicate> predicates = new ArrayList<>();
+        if (month != null && year != null) {
+            final var from = LocalDate.of(year, month, 1);
+            final var to = from.plusMonths(1);
+            predicates.add(cb.greaterThanOrEqualTo(root.get("date"), from));
+            predicates.add(cb.lessThan(root.get("date"), to));
+        }
+        if (typeId != null) {
+            predicates.add(cb.equal(root.get("type").get("id"), typeId));
+        }
+        return predicates;
+    }
+
+    private Revenue findEntityById(final UUID id) {
+        return revenueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(REVENUE_NOT_FOUND));
+    }
+
+    private RevenueType requireType(final UUID typeId) {
+        return revenueTypeRepository.findById(typeId).orElseThrow(() -> new ResourceNotFoundException(REVENUE_TYPE_NOT_FOUND));
+    }
+}

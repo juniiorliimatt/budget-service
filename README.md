@@ -28,14 +28,21 @@ push pro GitLab é replicado automaticamente via git hook. Ver
 ```
 br.com.budget
 ├── config/            OpenAPI, Security (resource server), JPA auditing
-├── exceptions/         Exceções de domínio + handler global (RestExceptionHandler)
-└── revenue/
-    ├── controllers/     RevenueController (CRUD REST)
-    ├── dto/             DTOs de entrada/saída
-    ├── entities/         Revenue
-    ├── repositories/     Spring Data JPA
-    └── services/         RevenueService
+├── controllers/       RevenueController, SpendingController, RevenueTypeController,
+│                      SpendingTypeController, BudgetRuleController
+├── exceptions/        Exceções de domínio + handler global (RestExceptionHandler)
+├── models/
+│   ├── dto/           DTOs de entrada/saída
+│   ├── entities/       Revenue, Spending, RevenueType, SpendingType
+│   └── enums/          SpendingCategory (ESSENTIAL/PERSONAL/SAVINGS — regra 50/30/20)
+├── repositories/      Spring Data JPA
+└── services/          RevenueService, SpendingService, RevenueTypeService,
+                       SpendingTypeService, BudgetRuleService
 ```
+
+`RevenueType`/`SpendingType` são catálogos com CRUD próprio (`name` de receita/despesa
+deixou de ser texto livre em `Revenue`/`Spending` — agora é uma referência pro tipo
+cadastrado). `SpendingType` carrega também a `category` da regra 50/30/20.
 
 ## Autenticação
 

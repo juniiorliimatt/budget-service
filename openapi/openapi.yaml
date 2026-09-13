@@ -14,10 +14,141 @@ servers:
 security:
 - bearer-jwt: []
 paths:
-  /api/revenues:
+  /api/v1/budget-rules/fifty-thirty-twenty:
     get:
-      operationId: findAll
+      operationId: fiftyThirtyTwenty
       parameters:
+      - in: query
+        name: month
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: year
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FiftyThirtyTwentyDTO"
+          description: OK
+      tags:
+      - budget-rule-controller
+  /api/v1/revenue-types:
+    get:
+      operationId: findAll_1
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueTypeDTO"
+          description: OK
+      tags:
+      - revenue-type-controller
+    post:
+      operationId: save_3
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueTypeDTO"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RevenueTypeDTO"
+          description: Created
+      tags:
+      - revenue-type-controller
+  /api/v1/revenue-types/{id}:
+    delete:
+      operationId: delete_3
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      tags:
+      - revenue-type-controller
+    get:
+      operationId: findById_3
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RevenueTypeDTO"
+          description: OK
+      tags:
+      - revenue-type-controller
+    put:
+      operationId: update_3
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueTypeDTO"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RevenueTypeDTO"
+          description: OK
+      tags:
+      - revenue-type-controller
+  /api/v1/revenues:
+    get:
+      operationId: search_1
+      parameters:
+      - in: query
+        name: month
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: year
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: typeId
+        required: false
+        schema:
+          type: string
+          format: uuid
       - in: query
         name: pageable
         required: true
@@ -33,12 +164,12 @@ paths:
       tags:
       - revenue-controller
     post:
-      operationId: save
+      operationId: save_2
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RevenueInsertOrUpdateDTO"
+              $ref: "#/components/schemas/RevenueDTO"
         required: true
       responses:
         "201":
@@ -49,9 +180,40 @@ paths:
           description: Created
       tags:
       - revenue-controller
-  /api/revenues/{id}:
+  /api/v1/revenues/total:
+    get:
+      operationId: total_1
+      parameters:
+      - in: query
+        name: month
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: year
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: typeId
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TotalDTO"
+          description: OK
+      tags:
+      - revenue-controller
+  /api/v1/revenues/{id}:
     delete:
-      operationId: delete
+      operationId: delete_2
       parameters:
       - in: path
         name: id
@@ -65,7 +227,7 @@ paths:
       tags:
       - revenue-controller
     get:
-      operationId: findById
+      operationId: findById_2
       parameters:
       - in: path
         name: id
@@ -83,6 +245,235 @@ paths:
       tags:
       - revenue-controller
     put:
+      operationId: update_2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueDTO"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RevenueDTO"
+          description: OK
+      tags:
+      - revenue-controller
+  /api/v1/spending-types:
+    get:
+      operationId: findAll
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpendingTypeDTO"
+          description: OK
+      tags:
+      - spending-type-controller
+    post:
+      operationId: save_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpendingTypeDTO"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpendingTypeDTO"
+          description: Created
+      tags:
+      - spending-type-controller
+  /api/v1/spending-types/{id}:
+    delete:
+      operationId: delete_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      tags:
+      - spending-type-controller
+    get:
+      operationId: findById_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpendingTypeDTO"
+          description: OK
+      tags:
+      - spending-type-controller
+    put:
+      operationId: update_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpendingTypeDTO"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpendingTypeDTO"
+          description: OK
+      tags:
+      - spending-type-controller
+  /api/v1/spendings:
+    get:
+      operationId: search
+      parameters:
+      - in: query
+        name: month
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: year
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: typeId
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: pageable
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageSpendingDTO"
+          description: OK
+      tags:
+      - spending-controller
+    post:
+      operationId: save
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpendingDTO"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpendingDTO"
+          description: Created
+      tags:
+      - spending-controller
+  /api/v1/spendings/total:
+    get:
+      operationId: total
+      parameters:
+      - in: query
+        name: month
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: year
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: typeId
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TotalDTO"
+          description: OK
+      tags:
+      - spending-controller
+  /api/v1/spendings/{id}:
+    delete:
+      operationId: delete
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      tags:
+      - spending-controller
+    get:
+      operationId: findById
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SpendingDTO"
+          description: OK
+      tags:
+      - spending-controller
+    put:
       operationId: update
       parameters:
       - in: path
@@ -95,19 +486,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RevenueInsertOrUpdateDTO"
+              $ref: "#/components/schemas/SpendingDTO"
         required: true
       responses:
         "200":
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/RevenueDTO"
+                $ref: "#/components/schemas/SpendingDTO"
           description: OK
       tags:
-      - revenue-controller
+      - spending-controller
 components:
   schemas:
+    BudgetBucketDTO:
+      type: object
+      properties:
+        actual:
+          type: number
+        difference:
+          type: number
+        target:
+          type: number
+    FiftyThirtyTwentyDTO:
+      type: object
+      properties:
+        essential:
+          $ref: "#/components/schemas/BudgetBucketDTO"
+        personal:
+          $ref: "#/components/schemas/BudgetBucketDTO"
+        savings:
+          $ref: "#/components/schemas/BudgetBucketDTO"
+        totalRevenue:
+          type: number
     PageRevenueDTO:
       type: object
       properties:
@@ -115,6 +526,38 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RevenueDTO"
+        empty:
+          type: boolean
+        first:
+          type: boolean
+        last:
+          type: boolean
+        number:
+          type: integer
+          format: int32
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        size:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageSpendingDTO:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpendingDTO"
         empty:
           type: boolean
         first:
@@ -182,25 +625,28 @@ components:
         id:
           type: string
           format: uuid
-        name:
+        typeId:
           type: string
-        value:
-          type: number
-    RevenueInsertOrUpdateDTO:
-      type: object
-      properties:
-        date:
+          format: uuid
+        typeName:
           type: string
-          format: date
-        name:
-          type: string
-          minLength: 1
         value:
           type: number
       required:
       - date
-      - name
+      - typeId
       - value
+    RevenueTypeDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+      required:
+      - name
     SortObject:
       type: object
       properties:
@@ -210,6 +656,54 @@ components:
           type: boolean
         unsorted:
           type: boolean
+    SpendingDTO:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        id:
+          type: string
+          format: uuid
+        typeId:
+          type: string
+          format: uuid
+        typeName:
+          type: string
+        value:
+          type: number
+        wasPaid:
+          type: boolean
+      required:
+      - date
+      - typeId
+      - value
+      - wasPaid
+    SpendingTypeDTO:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+          - ESSENTIAL
+          - PERSONAL
+          - SAVINGS
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+      required:
+      - category
+      - name
+    TotalDTO:
+      type: object
+      properties:
+        total:
+          type: number
   securitySchemes:
     bearer-jwt:
       bearerFormat: JWT
