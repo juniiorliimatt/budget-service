@@ -164,6 +164,15 @@ class RevenueControllerTest {
     }
 
     @Test
+    void saveAll_withRawArrayInsteadOfEnvelope_returnsBadRequestNotServerError() throws Exception {
+        mockMvc.perform(post(API_V1_REVENUES + "/batch")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content("[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":100,\"date\":\"2026-09-01\"}]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void history_withAuth_returnsRevisions() throws Exception {
         var id = UUID.randomUUID();
         var typeId = UUID.randomUUID();
