@@ -68,6 +68,7 @@ public class RevenueService {
                 .type(requireType(dto.typeId()))
                 .value(dto.value())
                 .date(dto.date())
+                .referenceDate(resolveReferenceDate(dto))
                 .ownerUsername(ownerUsername)
                 .build();
         return RevenueDTO.from(revenueRepository.save(revenue));
@@ -79,7 +80,13 @@ public class RevenueService {
         revenue.setType(requireType(dto.typeId()));
         revenue.setValue(dto.value());
         revenue.setDate(dto.date());
+        revenue.setReferenceDate(resolveReferenceDate(dto));
         return RevenueDTO.from(revenueRepository.save(revenue));
+    }
+
+    /** Competência default = {@code date} quando o client não informa {@code referenceDate}. */
+    private LocalDate resolveReferenceDate(final RevenueDTO dto) {
+        return dto.referenceDate() != null ? dto.referenceDate() : dto.date();
     }
 
     @Transactional
@@ -107,8 +114,8 @@ public class RevenueService {
         if (month != null && year != null) {
             final var from = LocalDate.of(year, month, 1);
             final var to = from.plusMonths(1);
-            predicates.add(cb.greaterThanOrEqualTo(root.get("date"), from));
-            predicates.add(cb.lessThan(root.get("date"), to));
+            predicates.add(cb.greaterThanOrEqualTo(root.get("referenceDate"), from));
+            predicates.add(cb.lessThan(root.get("referenceDate"), to));
         }
         if (typeId != null) {
             predicates.add(cb.equal(root.get("type").get("id"), typeId));

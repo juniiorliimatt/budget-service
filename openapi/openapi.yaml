@@ -625,6 +625,9 @@ components:
         id:
           type: string
           format: uuid
+        referenceDate:
+          type: string
+          format: date
         typeId:
           type: string
           format: uuid
@@ -667,6 +670,9 @@ components:
         id:
           type: string
           format: uuid
+        referenceDate:
+          type: string
+          format: date
         typeId:
           type: string
           format: uuid

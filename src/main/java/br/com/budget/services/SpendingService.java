@@ -66,6 +66,7 @@ public class SpendingService {
             .description(dto.description())
             .value(dto.value())
             .date(dto.date())
+            .referenceDate(resolveReferenceDate(dto))
             .wasPaid(dto.wasPaid())
             .ownerUsername(ownerUsername)
             .build();
@@ -79,8 +80,14 @@ public class SpendingService {
     spending.setDescription(dto.description());
     spending.setValue(dto.value());
     spending.setDate(dto.date());
+    spending.setReferenceDate(resolveReferenceDate(dto));
     spending.setWasPaid(dto.wasPaid());
     return SpendingDTO.from(spendingRepository.save(spending));
+  }
+
+  /** Competência default = {@code date} quando o client não informa {@code referenceDate}. */
+  private LocalDate resolveReferenceDate(final SpendingDTO dto) {
+    return dto.referenceDate() != null ? dto.referenceDate() : dto.date();
   }
 
   @Transactional
@@ -108,8 +115,8 @@ public class SpendingService {
     if (month != null && year != null) {
       final var from = LocalDate.of(year, month, 1);
       final var to = from.plusMonths(1);
-      predicates.add(cb.greaterThanOrEqualTo(root.get("date"), from));
-      predicates.add(cb.lessThan(root.get("date"), to));
+      predicates.add(cb.greaterThanOrEqualTo(root.get("referenceDate"), from));
+      predicates.add(cb.lessThan(root.get("referenceDate"), to));
     }
     if (typeId != null) {
       predicates.add(cb.equal(root.get("type").get("id"), typeId));

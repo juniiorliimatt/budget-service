@@ -56,7 +56,7 @@ class SpendingControllerTest {
     }
 
     private SpendingDTO dto(String typeName, BigDecimal value) {
-        return new SpendingDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, "desc", value, LocalDate.now(), false);
+        return new SpendingDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, "desc", value, LocalDate.now(), LocalDate.now(), false);
     }
 
     @Test

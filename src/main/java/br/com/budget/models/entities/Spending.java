@@ -59,6 +59,15 @@ public class Spending implements Serializable {
   @NotNull(message = "Required field date")
   private LocalDate date;
 
+  /**
+   * Competência: mês/ano orçamentário a que este lançamento pertence — usada em todo
+   * filtro/total/regra por mês/ano, não {@code date}. Pode divergir de {@code date}
+   * (ex.: conta paga adiantado em outro mês). Default = {@code date} quando omitida.
+   */
+  @NotNull(message = "Required field referenceDate")
+  @Column(name = "reference_date", nullable = false)
+  private LocalDate referenceDate;
+
   @NotNull(message = "Required field wasPaid")
   private Boolean wasPaid;
 

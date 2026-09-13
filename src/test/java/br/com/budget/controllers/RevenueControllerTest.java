@@ -56,7 +56,7 @@ class RevenueControllerTest {
     }
 
     private RevenueDTO dto(String typeName, BigDecimal value) {
-        return new RevenueDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, value, LocalDate.now());
+        return new RevenueDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, value, LocalDate.now(), LocalDate.now());
     }
 
     @Test

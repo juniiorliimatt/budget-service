@@ -62,8 +62,8 @@ public class BudgetRuleService {
         query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO))
                 .where(cb.equal(root.get("ownerUsername"), ownerUsername),
                         cb.equal(root.get("type").get("category"), category),
-                        cb.greaterThanOrEqualTo(root.get("date"), from),
-                        cb.lessThan(root.get("date"), to));
+                        cb.greaterThanOrEqualTo(root.get("referenceDate"), from),
+                        cb.lessThan(root.get("referenceDate"), to));
 
         return entityManager.createQuery(query).getSingleResult();
     }

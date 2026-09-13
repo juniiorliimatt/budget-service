@@ -59,6 +59,16 @@ public class Revenue {
     @Column(nullable = false)
     private LocalDate date;
 
+    /**
+     * Competência: mês/ano orçamentário a que este lançamento pertence — usada em todo
+     * filtro/total/regra por mês/ano, não {@code date}. Pode divergir de {@code date}
+     * (ex.: salário recebido dia 30 que custeia as contas do mês seguinte deve ter
+     * {@code referenceDate} no mês seguinte). Default = {@code date} quando omitida.
+     */
+    @NotNull(message = "Required field referenceDate")
+    @Column(name = "reference_date", nullable = false)
+    private LocalDate referenceDate;
+
     /** Username (subject da introspecção) do dono do lançamento — nunca vem do client. */
     @NotBlank(message = "Required field ownerUsername")
     @Column(name = "owner_username", nullable = false, updatable = false, length = 255)
