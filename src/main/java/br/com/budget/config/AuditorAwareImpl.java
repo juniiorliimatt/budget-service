@@ -14,6 +14,9 @@ import java.util.Optional;
  * introspecção remota (ver docs/budget-service-migracao-introspeccao.md na raiz do
  * monorepo) o principal nunca mais é um {@code Jwt}, e um cast direto sempre caía no
  * fallback "system", nunca gravando o usuário real em created_by/updated_by.
+ * {@code Optional.empty()} quando não autenticado, mesmo padrão do AuditorAwareImpl do
+ * workbox-api — todo endpoint aqui exige autenticação, então esse ramo nunca populariza
+ * created_by/updated_by na prática.
  */
 @Component
 public class AuditorAwareImpl implements AuditorAware<String> {
@@ -22,7 +25,7 @@ public class AuditorAwareImpl implements AuditorAware<String> {
     public Optional<String> getCurrentAuditor() {
         final var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.of("system");
+            return Optional.empty();
         }
         return Optional.ofNullable(authentication.getName());
     }

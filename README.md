@@ -18,6 +18,7 @@ push pro GitLab é replicado automaticamente via git hook. Ver
 | Framework | Spring Boot 3.5.16 |
 | Build | Gradle 9.7.1 |
 | Persistência | Spring Data JPA + Hibernate, Liquibase (migrations), schema `budget` próprio |
+| Auditoria | `@CreatedBy`/`@CreatedDate`/etc. (Spring Data JPA) em toda entidade + Hibernate Envers (`@Audited`) com histórico completo de revisões — mesmo padrão do `workbox-api` |
 | Banco | PostgreSQL (dev/prod), H2 em memória (test) |
 | Segurança | Spring Security 6 (OAuth2 resource server, opaque token), valida token via introspecção remota no workbox-api |
 | Documentação de API | springdoc-openapi (Swagger UI + contrato versionado) |

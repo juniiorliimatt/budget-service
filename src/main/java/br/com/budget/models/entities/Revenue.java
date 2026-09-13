@@ -17,6 +17,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -40,6 +41,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "revenues", schema = "budget")
 @EntityListeners(AuditingEntityListener.class)
+@Audited
 public class Revenue {
 
     @Id
