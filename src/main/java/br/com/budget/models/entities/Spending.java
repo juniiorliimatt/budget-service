@@ -48,7 +48,7 @@ public class Spending implements Serializable {
   @JoinColumn(name = "spending_type_id", nullable = false)
   private SpendingType type;
 
-  @Size(min = 5, max = 250)
+  @Size(min = 3, max = 250)
   private String description;
 
   @Column(nullable = false)

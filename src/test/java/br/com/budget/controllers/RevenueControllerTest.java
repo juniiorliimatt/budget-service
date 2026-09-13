@@ -115,6 +115,18 @@ class RevenueControllerTest {
     }
 
     @Test
+    void save_withZeroValue_returnsCreated() throws Exception {
+        var dto = dto("Bônus", BigDecimal.ZERO);
+        when(revenueService.save(any(), eq(OWNER))).thenReturn(dto);
+
+        mockMvc.perform(post(API_V1_REVENUES)
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void delete_withAuth_returnsNoContent() throws Exception {
         mockMvc.perform(delete(API_V1_REVENUES + "/" + UUID.randomUUID()).with(auth()))
                 .andExpect(status().isNoContent());

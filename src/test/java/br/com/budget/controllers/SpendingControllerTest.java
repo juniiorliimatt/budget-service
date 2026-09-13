@@ -56,7 +56,7 @@ class SpendingControllerTest {
     }
 
     private SpendingDTO dto(String typeName, BigDecimal value) {
-        return new SpendingDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, "desc", value, LocalDate.now(), LocalDate.now(), false);
+        return new SpendingDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, "Descrição de teste", value, LocalDate.now(), LocalDate.now(), false);
     }
 
     @Test
@@ -112,6 +112,17 @@ class SpendingControllerTest {
                         .content(mapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.typeName").value("Aluguel"));
+    }
+
+    @Test
+    void save_withShortDescription_returnsUnprocessableEntity() throws Exception {
+        var invalid = new SpendingDTO(null, UUID.randomUUID(), null, "ab", BigDecimal.TEN, LocalDate.now(), null, false);
+
+        mockMvc.perform(post(API_V1_SPENDINGS)
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(invalid)))
+                .andExpect(status().isUnprocessableEntity());
     }
 
     @Test

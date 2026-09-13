@@ -705,6 +705,8 @@ components:
           format: date
         description:
           type: string
+          maxLength: 250
+          minLength: 3
         id:
           type: string
           format: uuid
