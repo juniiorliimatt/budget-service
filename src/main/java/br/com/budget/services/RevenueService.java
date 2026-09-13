@@ -108,11 +108,12 @@ public class RevenueService {
 
     /**
      * Total por mês/ano e/ou tipo (mesmos filtros de {@link #search}, ambos opcionais).
-     * Quando {@code typeId} não é informado (soma geral, base de qualquer resumo/regra),
-     * exclui tipos com {@code includeInTotals = false} — mesma regra do
-     * {@link #totalByType}, pra não duplicar na soma geral um valor que já entrou por
-     * outro tipo (ex.: "Caixinha"). Pedir o total de um tipo específico sempre devolve o
-     * valor real dele, a flag só governa o que entra na soma "de tudo".
+     * Quando é uma soma anual "de tudo" ({@code typeId} e {@code month} ambos ausentes —
+     * caso de {@link BudgetRuleService#yearlySummary}), exclui tipos com
+     * {@code includeInTotals = false} — mesma regra do {@link #totalByType}, pra não
+     * duplicar na soma um valor que já entrou por outro tipo (ex.: "Caixinha"). Resumo
+     * mensal e a regra 50/30/20 filtram por mês, então não entram nessa exclusão - só o
+     * anual. Pedir o total de um tipo específico sempre devolve o valor real dele.
      */
     @Transactional(readOnly = true)
     public TotalDTO total(final Integer month, final Integer year, final UUID typeId, final String ownerUsername) {
@@ -120,7 +121,7 @@ public class RevenueService {
         final var query = cb.createQuery(BigDecimal.class);
         final Root<Revenue> root = query.from(Revenue.class);
         final var predicates = buildPredicates(root, cb, month, year, typeId, ownerUsername);
-        if (typeId == null) {
+        if (typeId == null && month == null) {
             predicates.add(cb.isTrue(root.get("type").get("includeInTotals")));
         }
         query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO));
