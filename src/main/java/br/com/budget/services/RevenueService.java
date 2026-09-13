@@ -106,13 +106,23 @@ public class RevenueService {
         revenueRepository.delete(findEntityById(id, ownerUsername));
     }
 
-    /** Total por mês/ano e/ou tipo (mesmos filtros de {@link #search}, ambos opcionais). */
+    /**
+     * Total por mês/ano e/ou tipo (mesmos filtros de {@link #search}, ambos opcionais).
+     * Quando {@code typeId} não é informado (soma geral, base de qualquer resumo/regra),
+     * exclui tipos com {@code includeInTotals = false} — mesma regra do
+     * {@link #totalByType}, pra não duplicar na soma geral um valor que já entrou por
+     * outro tipo (ex.: "Caixinha"). Pedir o total de um tipo específico sempre devolve o
+     * valor real dele, a flag só governa o que entra na soma "de tudo".
+     */
     @Transactional(readOnly = true)
     public TotalDTO total(final Integer month, final Integer year, final UUID typeId, final String ownerUsername) {
         final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         final var query = cb.createQuery(BigDecimal.class);
         final Root<Revenue> root = query.from(Revenue.class);
         final var predicates = buildPredicates(root, cb, month, year, typeId, ownerUsername);
+        if (typeId == null) {
+            predicates.add(cb.isTrue(root.get("type").get("includeInTotals")));
+        }
         query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO));
         query.where(predicates.toArray(new Predicate[0]));
         return new TotalDTO(entityManager.createQuery(query).getSingleResult());
