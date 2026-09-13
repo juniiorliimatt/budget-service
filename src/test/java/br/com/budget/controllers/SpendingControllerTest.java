@@ -115,14 +115,14 @@ class SpendingControllerTest {
     }
 
     @Test
-    void save_withShortDescription_returnsUnprocessableEntity() throws Exception {
+    void save_withShortDescription_returnsBadRequest() throws Exception {
         var invalid = new SpendingDTO(null, UUID.randomUUID(), null, "ab", BigDecimal.TEN, LocalDate.now(), null, false);
 
         mockMvc.perform(post(API_V1_SPENDINGS)
                         .with(auth())
                         .contentType("application/json")
                         .content(mapper.writeValueAsString(invalid)))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

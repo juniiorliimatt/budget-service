@@ -2,56 +2,66 @@ package br.com.budget.exceptions.handler;
 
 import br.com.budget.exceptions.DuplicateResourceException;
 import br.com.budget.exceptions.ResourceNotFoundException;
-import br.com.budget.exceptions.models.ErrorResponse;
-import br.com.budget.exceptions.models.FieldError;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
-import java.util.List;
-
+/**
+ * Corpo de erro padronizado em RFC 7807 ({@link ProblemDetail}) — mesmo padrão do
+ * {@code RestExceptionHandler} do workbox-api, incluindo o catch-all
+ * {@link #handleUnexpected}: sem ele, exceção não mapeada aqui cairia no whitelabel error
+ * padrão do Spring, potencialmente vazando stack trace.
+ */
 @RestControllerAdvice
 public class RestExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(RestExceptionHandler.class);
+
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException e, HttpServletRequest request) {
-        return build(HttpStatus.NOT_FOUND, e, request, null);
+    public ProblemDetail handleResourceNotFound(final ResourceNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateResourceException e, HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, e, request, null);
-    }
-
-    /** Ex.: tentar apagar um tipo de receita/despesa ainda referenciado por algum lançamento. */
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e, HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, e, request, null);
+    public ProblemDetail handleDuplicate(final DuplicateResourceException exception) {
+        return problem(HttpStatus.CONFLICT, exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e, HttpServletRequest request) {
-        List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors().stream()
-                .map(fe -> new FieldError(fe.getField(), fe.getDefaultMessage()))
-                .toList();
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, e, request, fieldErrors);
+    public ProblemDetail handleMethodArgumentNotValid(final MethodArgumentNotValidException exception) {
+        final var detail = problem(HttpStatus.BAD_REQUEST, "Validation failed");
+        detail.setProperty("errors", exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> Map.of("field", error.getField(), "message", String.valueOf(error.getDefaultMessage())))
+                .toList());
+        return detail;
     }
 
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, Exception e, HttpServletRequest request, List<FieldError> fieldErrors) {
-        var body = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(status.value())
-                .statusName(status.name())
-                .exception(e.getClass().getSimpleName())
-                .message(e.getMessage())
-                .path(request.getRequestURI())
-                .fieldErrors(fieldErrors)
-                .build();
-        return ResponseEntity.status(status).body(body);
+    /**
+     * Ex.: tentar apagar um tipo de receita/despesa ainda referenciado por algum
+     * lançamento. A mensagem original do Hibernate/Postgres expõe detalhe de
+     * implementação (nome de constraint, SQL) que não serve pro usuário final - troca por
+     * uma mensagem de alto nível, mantendo a exceção original só nos logs do server.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(final DataIntegrityViolationException exception, final HttpServletRequest request) {
+        logger.error("Data integrity violation on {}", request.getRequestURI(), exception);
+        return problem(HttpStatus.CONFLICT, "Cannot delete: this record is still in use by other data.");
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleUnexpected(final Exception exception, final HttpServletRequest request) {
+        logger.error("Unhandled exception on {}", request.getRequestURI(), exception);
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error");
+    }
+
+    private ProblemDetail problem(final HttpStatus status, final String detail) {
+        return ProblemDetail.forStatusAndDetail(status, detail);
     }
 }
