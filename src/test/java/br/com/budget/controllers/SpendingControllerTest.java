@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.com.budget.models.dto.SpendingBatchRequestDTO;
 import br.com.budget.models.dto.SpendingDTO;
 import br.com.budget.models.dto.SpendingRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
@@ -135,6 +136,30 @@ class SpendingControllerTest {
     void delete_withAuth_returnsNoContent() throws Exception {
         mockMvc.perform(delete(API_V1_SPENDINGS + "/" + UUID.randomUUID()).with(auth()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void saveAll_withValidBody_returnsCreated() throws Exception {
+        var batch = new SpendingBatchRequestDTO(List.of(dto("Mercado", BigDecimal.valueOf(300)), dto("Aluguel", BigDecimal.valueOf(1500))));
+        when(spendingService.saveAll(any(), eq(OWNER))).thenReturn(batch.spendings());
+
+        mockMvc.perform(post(API_V1_SPENDINGS + "/batch")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(batch)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void saveAll_withEmptyList_returnsBadRequest() throws Exception {
+        var batch = new SpendingBatchRequestDTO(List.of());
+
+        mockMvc.perform(post(API_V1_SPENDINGS + "/batch")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(batch)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

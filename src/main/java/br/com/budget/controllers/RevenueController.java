@@ -1,5 +1,6 @@
 package br.com.budget.controllers;
 
+import br.com.budget.models.dto.RevenueBatchRequestDTO;
 import br.com.budget.models.dto.RevenueDTO;
 import br.com.budget.models.dto.RevenueRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
@@ -83,6 +84,15 @@ public class RevenueController {
         final var saved = revenueService.save(dto, authentication.getName());
         final URI uri = uriBuilder.path("/api/v1/revenues/{id}").buildAndExpand(saved.id()).toUri();
         return ResponseEntity.created(uri).body(saved);
+    }
+
+    /** Insere várias receitas de uma vez, numa única transação (tudo ou nada). */
+    @PostMapping("/batch")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<List<RevenueDTO>> saveAll(@RequestBody @Valid RevenueBatchRequestDTO batch,
+                                                      Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(revenueService.saveAll(batch.revenues(), authentication.getName()));
     }
 
     @PutMapping("/{id}")

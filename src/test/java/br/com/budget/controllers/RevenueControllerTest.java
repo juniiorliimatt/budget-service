@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.com.budget.models.dto.RevenueBatchRequestDTO;
 import br.com.budget.models.dto.RevenueDTO;
 import br.com.budget.models.dto.RevenueRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
@@ -136,6 +137,30 @@ class RevenueControllerTest {
     void delete_withAuth_returnsNoContent() throws Exception {
         mockMvc.perform(delete(API_V1_REVENUES + "/" + UUID.randomUUID()).with(auth()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void saveAll_withValidBody_returnsCreated() throws Exception {
+        var batch = new RevenueBatchRequestDTO(List.of(dto("Salary", BigDecimal.valueOf(5000)), dto("Freelance", BigDecimal.valueOf(1200))));
+        when(revenueService.saveAll(any(), eq(OWNER))).thenReturn(batch.revenues());
+
+        mockMvc.perform(post(API_V1_REVENUES + "/batch")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(batch)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void saveAll_withEmptyList_returnsBadRequest() throws Exception {
+        var batch = new RevenueBatchRequestDTO(List.of());
+
+        mockMvc.perform(post(API_V1_REVENUES + "/batch")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(batch)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

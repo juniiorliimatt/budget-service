@@ -1,5 +1,6 @@
 package br.com.budget.controllers;
 
+import br.com.budget.models.dto.SpendingBatchRequestDTO;
 import br.com.budget.models.dto.SpendingDTO;
 import br.com.budget.models.dto.SpendingRevisionDTO;
 import br.com.budget.models.dto.TotalDTO;
@@ -83,6 +84,15 @@ public class SpendingController {
     final var saved = spendingService.save(dto, authentication.getName());
     final URI uri = uriBuilder.path("/api/v1/spendings/{id}").buildAndExpand(saved.id()).toUri();
     return ResponseEntity.created(uri).body(saved);
+  }
+
+  /** Insere várias despesas de uma vez, numa única transação (tudo ou nada). */
+  @PostMapping("/batch")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ResponseEntity<List<SpendingDTO>> saveAll(@RequestBody @Valid SpendingBatchRequestDTO batch,
+                                                     Authentication authentication) {
+    return ResponseEntity.status(HttpStatus.CREATED)
+            .body(spendingService.saveAll(batch.spendings(), authentication.getName()));
   }
 
   @PutMapping("/{id}")

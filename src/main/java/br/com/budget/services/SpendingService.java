@@ -85,6 +85,17 @@ public class SpendingService {
     return SpendingDTO.from(spendingRepository.save(spending));
   }
 
+  /**
+   * Insere o lote inteiro numa única transação — se um item falhar (ex.: typeId
+   * inexistente), nenhum é persistido. Chamada a {@link #save} aqui é invocação
+   * direta (mesma instância), não passa pelo proxy do Spring, então quem garante a
+   * atomicidade é a transação desta própria chamada, não a de {@code save}.
+   */
+  @Transactional
+  public List<SpendingDTO> saveAll(final List<SpendingDTO> dtos, final String ownerUsername) {
+    return dtos.stream().map(dto -> save(dto, ownerUsername)).toList();
+  }
+
   /** Competência default = {@code date} quando o client não informa {@code referenceDate}. */
   private LocalDate resolveReferenceDate(final SpendingDTO dto) {
     return dto.referenceDate() != null ? dto.referenceDate() : dto.date();

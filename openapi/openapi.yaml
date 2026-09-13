@@ -226,6 +226,26 @@ paths:
           description: Created
       tags:
       - revenue-controller
+  /api/v1/revenues/batch:
+    post:
+      operationId: saveAll_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueBatchRequestDTO"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueDTO"
+          description: Created
+      tags:
+      - revenue-controller
   /api/v1/revenues/total:
     get:
       operationId: total_1
@@ -497,6 +517,26 @@ paths:
           description: Created
       tags:
       - spending-controller
+  /api/v1/spendings/batch:
+    post:
+      operationId: saveAll
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpendingBatchRequestDTO"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpendingDTO"
+          description: Created
+      tags:
+      - spending-controller
   /api/v1/spendings/total:
     get:
       operationId: total
@@ -738,6 +778,17 @@ components:
           $ref: "#/components/schemas/SortObject"
         unpaged:
           type: boolean
+    RevenueBatchRequestDTO:
+      type: object
+      properties:
+        revenues:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueDTO"
+          maxItems: 500
+          minItems: 0
+      required:
+      - revenues
     RevenueDTO:
       type: object
       properties:
@@ -826,6 +877,17 @@ components:
           type: boolean
         unsorted:
           type: boolean
+    SpendingBatchRequestDTO:
+      type: object
+      properties:
+        spendings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpendingDTO"
+          maxItems: 500
+          minItems: 0
+      required:
+      - spendings
     SpendingDTO:
       type: object
       properties:
