@@ -7,6 +7,7 @@ import br.com.budget.models.entities.RevenueType;
 import br.com.budget.repositories.RevenueTypeRepository;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class RevenueTypeService {
 
     @Transactional(readOnly = true)
     public List<RevenueTypeDTO> findAll() {
-        return repository.findAll().stream().map(RevenueTypeDTO::from).toList();
+        return repository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream().map(RevenueTypeDTO::from).toList();
     }
 
     @Transactional(readOnly = true)

@@ -7,6 +7,7 @@ import br.com.budget.models.entities.SpendingType;
 import br.com.budget.repositories.SpendingTypeRepository;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class SpendingTypeService {
 
     @Transactional(readOnly = true)
     public List<SpendingTypeDTO> findAll() {
-        return repository.findAll().stream().map(SpendingTypeDTO::from).toList();
+        return repository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream().map(SpendingTypeDTO::from).toList();
     }
 
     @Transactional(readOnly = true)
