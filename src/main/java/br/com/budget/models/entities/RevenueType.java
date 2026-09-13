@@ -47,15 +47,25 @@ public class RevenueType {
     private String name;
 
     /**
-     * Controla se este tipo entra na soma agrupada por tipo (endpoints {@code by-type})
-     * — ex.: "Caixinha" é sobra de salário de mês anterior recolocada como receita, já
-     * contabilizada dentro do próprio "Salário" quando entrou; incluir de novo aqui
-     * duplicaria o valor na tela de metas. Não afeta o total geral (mês/ano), só o
-     * agrupamento por tipo. Default {@code true} quando omitido no insert/update.
+     * Controla se este tipo entra na soma agrupada por tipo ({@code by-type}) e no total
+     * anual "de tudo" ({@code yearly-summary}) — ex.: "Caixinha" é sobra de salário de
+     * mês anterior recolocada como receita, já contabilizada dentro do próprio "Salário"
+     * quando entrou; incluir de novo aqui duplicaria o valor no anual. Não afeta total
+     * mensal nem total de um tipo específico. Default {@code true} quando omitido.
      */
     @NotNull(message = "Required field includeInTotals")
     @Column(name = "include_in_totals", nullable = false)
     private Boolean includeInTotals;
+
+    /**
+     * Controla se este tipo entra no total mensal "de tudo" (resumo mensal, regra
+     * 50/30/20) — ex.: saldo que sobra de dezembro e é lançado em janeiro pra fechar o
+     * ano; contar em janeiro infla o mês com dinheiro que não é receita nova daquele
+     * mês. Conta normalmente no anual e no by-type. Default {@code true} quando omitido.
+     */
+    @NotNull(message = "Required field includeInMonthlyTotals")
+    @Column(name = "include_in_monthly_totals", nullable = false)
+    private Boolean includeInMonthlyTotals;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

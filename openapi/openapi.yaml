@@ -906,6 +906,8 @@ components:
         id:
           type: string
           format: uuid
+        includeInMonthlyTotals:
+          type: boolean
         includeInTotals:
           type: boolean
         name:
@@ -924,6 +926,8 @@ components:
         id:
           type: string
           format: uuid
+        includeInMonthlyTotals:
+          type: boolean
         includeInTotals:
           type: boolean
         name:

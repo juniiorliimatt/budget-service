@@ -139,7 +139,8 @@ public class AuditService {
                             revisionType.name(),
                             snapshot.getId(),
                             snapshot.getName(),
-                            snapshot.getIncludeInTotals());
+                            snapshot.getIncludeInTotals(),
+                            snapshot.getIncludeInMonthlyTotals());
                 })
                 .toList();
     }

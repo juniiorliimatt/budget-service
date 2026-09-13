@@ -45,10 +45,16 @@ br.com.budget
 `RevenueType`/`SpendingType` são catálogos com CRUD próprio (`name` de receita/despesa
 deixou de ser texto livre em `Revenue`/`Spending` — agora é uma referência pro tipo
 cadastrado). `SpendingType` carrega também a `category` da regra 50/30/20. `RevenueType`
-carrega `includeInTotals` (default `true`) — `false` tira o tipo da soma agrupada por
-tipo (`GET /revenues/by-type`) sem afetar o total geral; caso de uso: um tipo tipo
-"Caixinha" que é sobra de salário de mês anterior recolocada como receita — já contada
-dentro do próprio "Salário", contar nos dois duplicaria o valor na tela de metas.
+carrega duas flags independentes (ambas default `true`, nunca afetam CRUD normal, busca
+ou total de um tipo específico via `?typeId=`):
+
+- `includeInTotals=false` — tira o tipo do agrupamento por tipo (`GET
+  /revenues/by-type`) e do total anual "de tudo" (`yearly-summary`). Caso de uso:
+  "Caixinha" é sobra de salário de mês anterior recolocada como receita — já contada
+  dentro do próprio "Salário", contar nos dois duplicaria o valor.
+- `includeInMonthlyTotals=false` — tira o tipo do total mensal "de tudo" (resumo
+  mensal, regra 50/30/20). Caso de uso: saldo que sobra de dezembro e é lançado em
+  janeiro pra fechar o ano — não é receita nova daquele mês, mas ainda conta no anual.
 
 ## Autenticação
 

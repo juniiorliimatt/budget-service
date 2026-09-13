@@ -108,12 +108,17 @@ public class RevenueService {
 
     /**
      * Total por mês/ano e/ou tipo (mesmos filtros de {@link #search}, ambos opcionais).
-     * Quando é uma soma anual "de tudo" ({@code typeId} e {@code month} ambos ausentes —
-     * caso de {@link BudgetRuleService#yearlySummary}), exclui tipos com
-     * {@code includeInTotals = false} — mesma regra do {@link #totalByType}, pra não
-     * duplicar na soma um valor que já entrou por outro tipo (ex.: "Caixinha"). Resumo
-     * mensal e a regra 50/30/20 filtram por mês, então não entram nessa exclusão - só o
-     * anual. Pedir o total de um tipo específico sempre devolve o valor real dele.
+     * Pedir o total de um tipo específico ({@code typeId} informado) sempre devolve o
+     * valor real dele, nenhuma das duas flags abaixo se aplica. Sem {@code typeId}
+     * (soma "de tudo"):
+     * <ul>
+     *   <li>sem {@code month} (anual — caso de {@link BudgetRuleService#yearlySummary})
+     *   exclui tipos com {@code includeInTotals = false}, mesma regra do
+     *   {@link #totalByType} (ex.: "Caixinha", já contada dentro de outro tipo);</li>
+     *   <li>com {@code month} (mensal — resumo mensal, regra 50/30/20) exclui tipos com
+     *   {@code includeInMonthlyTotals = false} (ex.: saldo de dezembro lançado em
+     *   janeiro pra fechar o ano, que não é receita nova daquele mês).</li>
+     * </ul>
      */
     @Transactional(readOnly = true)
     public TotalDTO total(final Integer month, final Integer year, final UUID typeId, final String ownerUsername) {
@@ -121,8 +126,9 @@ public class RevenueService {
         final var query = cb.createQuery(BigDecimal.class);
         final Root<Revenue> root = query.from(Revenue.class);
         final var predicates = buildPredicates(root, cb, month, year, typeId, ownerUsername);
-        if (typeId == null && month == null) {
-            predicates.add(cb.isTrue(root.get("type").get("includeInTotals")));
+        if (typeId == null) {
+            final var flag = month == null ? "includeInTotals" : "includeInMonthlyTotals";
+            predicates.add(cb.isTrue(root.get("type").get(flag)));
         }
         query.select(cb.coalesce(cb.sum(root.get("value")), BigDecimal.ZERO));
         query.where(predicates.toArray(new Predicate[0]));
