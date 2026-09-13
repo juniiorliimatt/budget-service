@@ -23,6 +23,7 @@ push pro GitLab é replicado automaticamente via git hook. Ver
 | Segurança | Spring Security 6 (OAuth2 resource server, opaque token), valida token via introspecção remota no workbox-api |
 | Documentação de API | springdoc-openapi (Swagger UI + contrato versionado) |
 | Cobertura | JaCoCo |
+| Testes | JUnit 5 + MockMvc (`@WebMvcTest`), Cucumber (BDD, ainda sem `.feature` escritos), Testcontainers pra IT contra Postgres real descartável |
 
 ## Estrutura de pacotes
 
@@ -124,8 +125,18 @@ Tipos aceitos: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`, `style`, `per
 ./gradlew check
 ```
 
-JUnit 5 + Spring Boot Test + MockMvc, autenticação simulada via
-`SecurityMockMvcRequestPostProcessors.jwt()`.
+JUnit 5 + Spring Boot Test + MockMvc (`@WebMvcTest`, serviços mockados via
+`@MockitoBean`), autenticação simulada via
+`SecurityMockMvcRequestPostProcessors.opaqueToken()` (não `jwt()` — este serviço nunca
+decodifica JWT localmente, ver [Autenticação](#autenticação)).
+
+`RealPostgresSchemaIT` sobe o contexto Spring inteiro contra um Postgres real via
+Testcontainers (não o Postgres de dev compartilhado, porta 5433) — container novo e
+descartável a cada execução, com o mesmo role/schema restrito de produção
+(`budget_service`/`budget`). Existe pra pegar drift entre entidade JPA e changelog
+Liquibase que o H2 (`create-drop`) dos outros testes não reproduz — exige Docker
+disponível pra rodar. Cucumber já está nas dependências (mesma versão do
+`workbox-api`), mas ainda não há nenhum `.feature`/step definition escrito.
 
 ## CI/CD
 
