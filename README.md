@@ -77,7 +77,7 @@ Profiles disponíveis (`spring.profiles.active`):
 | Profile | Banco | Uso |
 |---|---|---|
 | `test` | H2 em memória (`ddl-auto=create-drop`) | Testes automatizados, geração do contrato OpenAPI |
-| `dev` (default) | PostgreSQL local via `DATABASE_URL` (default `jdbc:postgresql://localhost:5433/workbox`), schema `budget` | Desenvolvimento |
+| `dev` (default) | PostgreSQL local via `DATABASE_URL` (default `jdbc:postgresql://localhost:7050/workbox`), schema `budget` | Desenvolvimento |
 | `prod` | PostgreSQL via `DATABASE_URL` (obrigatório) | Deploy |
 
 ```bash
@@ -85,17 +85,17 @@ Profiles disponíveis (`spring.profiles.active`):
 ./gradlew bootRun --args='--spring.profiles.active=test'   # sem dependência externa
 ```
 
-Sobe em `PORT` (default **8081** — evita colidir com o `workbox-api`, que usa 8080, ao
+Sobe em `PORT` (default **7052** — evita colidir com o `workbox-api`, que usa 7051, ao
 rodar os dois juntos localmente).
 
 Postgres local sobe via `docker-compose.yml` na raiz do monorepo (ver [README
-raiz](../README.md#rodando-localmente)) na porta **5433**, não 5432 — passe
-`DATABASE_URL=jdbc:postgresql://localhost:5433/workbox`. Banco único (`workbox`)
+raiz](../README.md#rodando-localmente)) na porta **7050**, não 5432 — passe
+`DATABASE_URL=jdbc:postgresql://localhost:7050/workbox`. Banco único (`workbox`)
 compartilhado com o `workbox-api` — este serviço só enxerga o schema `budget`, via o
 role `budget_service` (default de `POSTGRES_USER`/`POSTGRES_PASSWORD`), sem acesso ao
 schema `api` do outro serviço.
 
-CORS: `cors.allowed-origins` (default `http://localhost:5173,http://127.0.0.1:5173`,
+CORS: `cors.allowed-origins` (default `http://localhost:7053,http://127.0.0.1:7053`,
 mesma origem do `workbox-app` em dev) via Spring Security nativo — não um `Filter`
 manual. Origem específica é ecoada (nunca `*`), com `Access-Control-Allow-Credentials:
 true`, para funcionar com `withCredentials: true` no cliente HTTP do frontend.
@@ -141,7 +141,7 @@ JUnit 5 + Spring Boot Test + MockMvc (`@WebMvcTest`, serviços mockados via
 decodifica JWT localmente, ver [Autenticação](#autenticação)).
 
 `RealPostgresSchemaIT` sobe o contexto Spring inteiro contra um Postgres real via
-Testcontainers (não o Postgres de dev compartilhado, porta 5433) — container novo e
+Testcontainers (não o Postgres de dev compartilhado, porta 7050) — container novo e
 descartável a cada execução, com o mesmo role/schema restrito de produção
 (`budget_service`/`budget`). Existe pra pegar drift entre entidade JPA e changelog
 Liquibase que o H2 (`create-drop`) dos outros testes não reproduz — exige Docker

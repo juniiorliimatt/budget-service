@@ -34,7 +34,7 @@ public class SecurityConfig {
     private String introspectionClientSecret;
 
 
-    @Value("${cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
+    @Value("${cors.allowed-origins:http://localhost:7053,http://127.0.0.1:7053}")
     private List<String> allowedOrigins;
 
     @Bean

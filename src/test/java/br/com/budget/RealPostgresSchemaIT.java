@@ -15,7 +15,7 @@ import org.testcontainers.utility.DockerImageName;
  * {@code ddl-auto=validate}) contra um Postgres real e descartável, com o mesmo
  * role/schema restrito de produção ({@code budget_service}/{@code budget}, ver
  * {@code testcontainers-init.sql}) — nunca o superusuário do container, e nunca o
- * Postgres de dev compartilhado ({@code workbox-postgres}, porta 5433). Mesmo padrão do
+ * Postgres de dev compartilhado ({@code workbox-postgres}, porta 7050). Mesmo padrão do
  * {@code RealPostgresSchemaIT} do workbox-api.
  *
  * <p>Container novo e descartável a cada execução (sem reuse) é o que garante zero
