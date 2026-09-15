@@ -265,6 +265,26 @@ paths:
           description: Created
       tags:
       - revenue-controller
+  /api/v1/revenues/batch/annual:
+    post:
+      operationId: saveAnnual_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueAnnualBatchRequestDTO"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueDTO"
+          description: Created
+      tags:
+      - revenue-controller
   /api/v1/revenues/by-type:
     get:
       operationId: totalByType_1
@@ -577,6 +597,26 @@ paths:
           description: Created
       tags:
       - spending-controller
+  /api/v1/spendings/batch/annual:
+    post:
+      operationId: saveAnnual
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpendingAnnualBatchRequestDTO"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpendingDTO"
+          description: Created
+      tags:
+      - spending-controller
   /api/v1/spendings/by-type:
     get:
       operationId: totalByType
@@ -839,6 +879,18 @@ components:
           $ref: "#/components/schemas/SortObject"
         unpaged:
           type: boolean
+    RevenueAnnualBatchRequestDTO:
+      type: object
+      properties:
+        revenue:
+          $ref: "#/components/schemas/RevenueDTO"
+        startMonth:
+          type: integer
+          format: int32
+          maximum: 12
+          minimum: 1
+      required:
+      - revenue
     RevenueBatchRequestDTO:
       type: object
       properties:
@@ -946,6 +998,18 @@ components:
           type: boolean
         unsorted:
           type: boolean
+    SpendingAnnualBatchRequestDTO:
+      type: object
+      properties:
+        spending:
+          $ref: "#/components/schemas/SpendingDTO"
+        startMonth:
+          type: integer
+          format: int32
+          maximum: 12
+          minimum: 1
+      required:
+      - spending
     SpendingBatchRequestDTO:
       type: object
       properties:
