@@ -14,7 +14,7 @@ public enum SpendingCategory {
 
     private final String label;
 
-    SpendingCategory(String label) {
+    SpendingCategory(final String label) {
         this.label = label;
     }
 

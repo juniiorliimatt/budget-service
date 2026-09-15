@@ -14,7 +14,7 @@ import java.util.UUID;
  * dos dois afeta o total de um tipo específico nem o CRUD normal.
  */
 public record RevenueTypeDTO(UUID id, @NotBlank String name, Boolean includeInTotals, Boolean includeInMonthlyTotals) {
-    public static RevenueTypeDTO from(RevenueType entity) {
+    public static RevenueTypeDTO from(final RevenueType entity) {
         return new RevenueTypeDTO(entity.getId(), entity.getName(), entity.getIncludeInTotals(), entity.getIncludeInMonthlyTotals());
     }
 }

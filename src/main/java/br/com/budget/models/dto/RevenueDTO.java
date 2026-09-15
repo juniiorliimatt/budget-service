@@ -21,7 +21,7 @@ public record RevenueDTO(
     @NotNull LocalDate date,
     LocalDate referenceDate) {
 
-    public static RevenueDTO from(Revenue revenue) {
+    public static RevenueDTO from(final Revenue revenue) {
         return new RevenueDTO(revenue.getId(), revenue.getType().getId(), revenue.getType().getName(),
                 revenue.getValue(), revenue.getDate(), revenue.getReferenceDate());
     }

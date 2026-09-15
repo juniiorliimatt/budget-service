@@ -65,7 +65,7 @@ class RevenueControllerTest {
                 .authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
-    private RevenueDTO dto(String typeName, BigDecimal value) {
+    private RevenueDTO dto(final String typeName, final BigDecimal value) {
         return new RevenueDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, value, LocalDate.now(), LocalDate.now());
     }
 
@@ -76,8 +76,8 @@ class RevenueControllerTest {
 
     @Test
     void search_withAuth_returnsPage() throws Exception {
-        var dto = dto("Salary", BigDecimal.valueOf(5000));
-        Page<RevenueDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
+        final var dto = dto("Salary", BigDecimal.valueOf(5000));
+        final Page<RevenueDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
         when(revenueService.search(isNull(), isNull(), isNull(), eq(OWNER), any())).thenReturn(page);
 
         mockMvc.perform(get(API_V1_REVENUES).with(auth()))
@@ -87,8 +87,8 @@ class RevenueControllerTest {
 
     @Test
     void search_withMonthYearAndType_passesFiltersThrough() throws Exception {
-        var typeId = UUID.randomUUID();
-        Page<RevenueDTO> page = new PageImpl<>(List.of());
+        final var typeId = UUID.randomUUID();
+        final Page<RevenueDTO> page = new PageImpl<>(List.of());
         when(revenueService.search(eq(9), eq(2026), eq(typeId), eq(OWNER), any())).thenReturn(page);
 
         mockMvc.perform(get(API_V1_REVENUES)
@@ -113,7 +113,7 @@ class RevenueControllerTest {
 
     @Test
     void save_withValidBody_returnsCreated() throws Exception {
-        var dto = dto("Freelance", BigDecimal.valueOf(1200));
+        final var dto = dto("Freelance", BigDecimal.valueOf(1200));
         when(revenueService.save(any(), eq(OWNER))).thenReturn(dto);
 
         mockMvc.perform(post(API_V1_REVENUES)
@@ -126,7 +126,7 @@ class RevenueControllerTest {
 
     @Test
     void save_withZeroValue_returnsCreated() throws Exception {
-        var dto = dto("Bônus", BigDecimal.ZERO);
+        final var dto = dto("Bônus", BigDecimal.ZERO);
         when(revenueService.save(any(), eq(OWNER))).thenReturn(dto);
 
         mockMvc.perform(post(API_V1_REVENUES)
@@ -144,7 +144,7 @@ class RevenueControllerTest {
 
     @Test
     void saveAll_withValidBody_returnsCreated() throws Exception {
-        var batch = new RevenueBatchRequestDTO(List.of(dto("Salary", BigDecimal.valueOf(5000)), dto("Freelance", BigDecimal.valueOf(1200))));
+        final var batch = new RevenueBatchRequestDTO(List.of(dto("Salary", BigDecimal.valueOf(5000)), dto("Freelance", BigDecimal.valueOf(1200))));
         when(revenueService.saveAll(any(), eq(OWNER))).thenReturn(batch.revenues());
 
         mockMvc.perform(post(API_V1_REVENUES + "/batch")
@@ -157,7 +157,7 @@ class RevenueControllerTest {
 
     @Test
     void saveAll_withEmptyList_returnsBadRequest() throws Exception {
-        var batch = new RevenueBatchRequestDTO(List.of());
+        final var batch = new RevenueBatchRequestDTO(List.of());
 
         mockMvc.perform(post(API_V1_REVENUES + "/batch")
                         .with(auth())
@@ -177,10 +177,10 @@ class RevenueControllerTest {
 
     @Test
     void saveAnnual_withoutMonths_returnsCreatedWithTwelveEntriesPerItem() throws Exception {
-        var typeId = UUID.randomUUID();
-        var template = new RevenueDTO(null, typeId, null, BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), null);
-        var request = new RevenueAnnualBatchRequestDTO(List.of(template), null);
-        var generated = java.util.stream.IntStream.rangeClosed(1, 12)
+        final var typeId = UUID.randomUUID();
+        final var template = new RevenueDTO(null, typeId, null, BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), null);
+        final var request = new RevenueAnnualBatchRequestDTO(List.of(template), null);
+        final var generated = java.util.stream.IntStream.rangeClosed(1, 12)
                 .mapToObj(month -> new RevenueDTO(UUID.randomUUID(), typeId, "Salary", BigDecimal.valueOf(5000),
                         LocalDate.of(2026, month, 5), LocalDate.of(2026, month, 5)))
                 .toList();
@@ -196,10 +196,10 @@ class RevenueControllerTest {
 
     @Test
     void saveAnnual_withSelectedMonths_returnsCreatedWithMatchingCount() throws Exception {
-        var typeId = UUID.randomUUID();
-        var template = new RevenueDTO(null, typeId, null, BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), null);
-        var request = new RevenueAnnualBatchRequestDTO(List.of(template), Set.of(1, 7));
-        var generated = List.of(
+        final var typeId = UUID.randomUUID();
+        final var template = new RevenueDTO(null, typeId, null, BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), null);
+        final var request = new RevenueAnnualBatchRequestDTO(List.of(template), Set.of(1, 7));
+        final var generated = List.of(
                 new RevenueDTO(UUID.randomUUID(), typeId, "Salary", BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), LocalDate.of(2026, 1, 5)),
                 new RevenueDTO(UUID.randomUUID(), typeId, "Salary", BigDecimal.valueOf(5000), LocalDate.of(2026, 7, 5), LocalDate.of(2026, 7, 5)));
         when(revenueService.saveAnnual(any(), eq(OWNER))).thenReturn(generated);
@@ -214,7 +214,7 @@ class RevenueControllerTest {
 
     @Test
     void saveAnnual_withEmptyRevenuesList_returnsBadRequest() throws Exception {
-        var request = new RevenueAnnualBatchRequestDTO(List.of(), null);
+        final var request = new RevenueAnnualBatchRequestDTO(List.of(), null);
 
         mockMvc.perform(post(API_V1_REVENUES + "/batch/annual")
                         .with(auth())
@@ -225,7 +225,7 @@ class RevenueControllerTest {
 
     @Test
     void saveAnnual_withInvalidMonth_returnsBadRequest() throws Exception {
-        var payload = "{\"revenues\":[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":5000,\"date\":\"2026-01-05\"}],\"months\":[0]}";
+        final var payload = "{\"revenues\":[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":5000,\"date\":\"2026-01-05\"}],\"months\":[0]}";
 
         mockMvc.perform(post(API_V1_REVENUES + "/batch/annual")
                         .with(auth())
@@ -236,7 +236,7 @@ class RevenueControllerTest {
 
     @Test
     void totalByType_withAuth_returnsGroupedTotals() throws Exception {
-        var typeId = UUID.randomUUID();
+        final var typeId = UUID.randomUUID();
         when(revenueService.totalByType(2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Salário", BigDecimal.valueOf(60000))));
 
         mockMvc.perform(get(API_V1_REVENUES + "/by-type").param("year", "2026").with(auth()))
@@ -247,9 +247,9 @@ class RevenueControllerTest {
 
     @Test
     void history_withAuth_returnsRevisions() throws Exception {
-        var id = UUID.randomUUID();
-        var typeId = UUID.randomUUID();
-        var revision = new RevenueRevisionDTO(1, LocalDateTime.now(), OWNER, "ADD", id, typeId, BigDecimal.valueOf(1000), LocalDate.now(), LocalDate.now());
+        final var id = UUID.randomUUID();
+        final var typeId = UUID.randomUUID();
+        final var revision = new RevenueRevisionDTO(1, LocalDateTime.now(), OWNER, "ADD", id, typeId, BigDecimal.valueOf(1000), LocalDate.now(), LocalDate.now());
         when(auditService.findRevenueHistory(id, OWNER)).thenReturn(List.of(revision));
 
         mockMvc.perform(get(API_V1_REVENUES + "/" + id + "/history").with(auth()))

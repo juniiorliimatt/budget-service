@@ -25,7 +25,7 @@ public record SpendingDTO(
     LocalDate referenceDate,
     @NotNull Boolean wasPaid) {
 
-    public static SpendingDTO from(Spending spending) {
+    public static SpendingDTO from(final Spending spending) {
         return new SpendingDTO(spending.getId(), spending.getType().getId(), spending.getType().getName(),
                 spending.getDescription(), spending.getValue(), spending.getDate(), spending.getReferenceDate(),
                 spending.getWasPaid());

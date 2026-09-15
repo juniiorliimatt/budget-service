@@ -40,32 +40,32 @@ public class SpendingTypeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SpendingTypeDTO> findById(@PathVariable UUID id) {
+    public ResponseEntity<SpendingTypeDTO> findById(@PathVariable final UUID id) {
         return ResponseEntity.ok(service.findById(id));
     }
 
     /** Histórico de revisões (Hibernate Envers) — catálogo global, qualquer usuário autenticado enxerga. */
     @GetMapping("/{id}/history")
-    public ResponseEntity<List<SpendingTypeRevisionDTO>> history(@PathVariable UUID id) {
+    public ResponseEntity<List<SpendingTypeRevisionDTO>> history(@PathVariable final UUID id) {
         return ResponseEntity.ok(auditService.findSpendingTypeHistory(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<SpendingTypeDTO> save(@RequestBody @Valid SpendingTypeDTO dto, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<SpendingTypeDTO> save(@RequestBody @Valid final SpendingTypeDTO dto, final UriComponentsBuilder uriBuilder) {
         final var saved = service.save(dto);
         final URI uri = uriBuilder.path("/api/v1/spending-types/{id}").buildAndExpand(saved.id()).toUri();
         return ResponseEntity.created(uri).body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SpendingTypeDTO> update(@PathVariable UUID id, @RequestBody @Valid SpendingTypeDTO dto) {
+    public ResponseEntity<SpendingTypeDTO> update(@PathVariable final UUID id, @RequestBody @Valid final SpendingTypeDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public void delete(@PathVariable final UUID id) {
         service.delete(id);
     }
 }

@@ -65,7 +65,7 @@ class SpendingControllerTest {
                 .authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
-    private SpendingDTO dto(String typeName, BigDecimal value) {
+    private SpendingDTO dto(final String typeName, final BigDecimal value) {
         return new SpendingDTO(UUID.randomUUID(), UUID.randomUUID(), typeName, "Descrição de teste", value, LocalDate.now(), LocalDate.now(), false);
     }
 
@@ -76,8 +76,8 @@ class SpendingControllerTest {
 
     @Test
     void search_withAuth_returnsPage() throws Exception {
-        var dto = dto("Mercado", BigDecimal.valueOf(300));
-        Page<SpendingDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
+        final var dto = dto("Mercado", BigDecimal.valueOf(300));
+        final Page<SpendingDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
         when(spendingService.search(isNull(), isNull(), isNull(), eq(OWNER), any())).thenReturn(page);
 
         mockMvc.perform(get(API_V1_SPENDINGS).with(auth()))
@@ -87,8 +87,8 @@ class SpendingControllerTest {
 
     @Test
     void search_withMonthYearAndType_passesFiltersThrough() throws Exception {
-        var typeId = UUID.randomUUID();
-        Page<SpendingDTO> page = new PageImpl<>(List.of());
+        final var typeId = UUID.randomUUID();
+        final Page<SpendingDTO> page = new PageImpl<>(List.of());
         when(spendingService.search(eq(9), eq(2026), eq(typeId), eq(OWNER), any())).thenReturn(page);
 
         mockMvc.perform(get(API_V1_SPENDINGS)
@@ -113,7 +113,7 @@ class SpendingControllerTest {
 
     @Test
     void save_withValidBody_returnsCreated() throws Exception {
-        var dto = dto("Aluguel", BigDecimal.valueOf(1500));
+        final var dto = dto("Aluguel", BigDecimal.valueOf(1500));
         when(spendingService.save(any(), eq(OWNER))).thenReturn(dto);
 
         mockMvc.perform(post(API_V1_SPENDINGS)
@@ -126,7 +126,7 @@ class SpendingControllerTest {
 
     @Test
     void save_withShortDescription_returnsBadRequest() throws Exception {
-        var invalid = new SpendingDTO(null, UUID.randomUUID(), null, "ab", BigDecimal.TEN, LocalDate.now(), null, false);
+        final var invalid = new SpendingDTO(null, UUID.randomUUID(), null, "ab", BigDecimal.TEN, LocalDate.now(), null, false);
 
         mockMvc.perform(post(API_V1_SPENDINGS)
                         .with(auth())
@@ -143,7 +143,7 @@ class SpendingControllerTest {
 
     @Test
     void saveAll_withValidBody_returnsCreated() throws Exception {
-        var batch = new SpendingBatchRequestDTO(List.of(dto("Mercado", BigDecimal.valueOf(300)), dto("Aluguel", BigDecimal.valueOf(1500))));
+        final var batch = new SpendingBatchRequestDTO(List.of(dto("Mercado", BigDecimal.valueOf(300)), dto("Aluguel", BigDecimal.valueOf(1500))));
         when(spendingService.saveAll(any(), eq(OWNER))).thenReturn(batch.spendings());
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch")
@@ -156,7 +156,7 @@ class SpendingControllerTest {
 
     @Test
     void saveAll_withEmptyList_returnsBadRequest() throws Exception {
-        var batch = new SpendingBatchRequestDTO(List.of());
+        final var batch = new SpendingBatchRequestDTO(List.of());
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch")
                         .with(auth())
@@ -167,10 +167,10 @@ class SpendingControllerTest {
 
     @Test
     void saveAnnual_withoutMonths_returnsCreatedWithTwelveEntriesPerItem() throws Exception {
-        var typeId = UUID.randomUUID();
-        var template = new SpendingDTO(null, typeId, null, "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 1, 10), null, false);
-        var request = new SpendingAnnualBatchRequestDTO(List.of(template), null);
-        var generated = java.util.stream.IntStream.rangeClosed(1, 12)
+        final var typeId = UUID.randomUUID();
+        final var template = new SpendingDTO(null, typeId, null, "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 1, 10), null, false);
+        final var request = new SpendingAnnualBatchRequestDTO(List.of(template), null);
+        final var generated = java.util.stream.IntStream.rangeClosed(1, 12)
                 .mapToObj(month -> new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150),
                         LocalDate.of(2026, month, 10), LocalDate.of(2026, month, 10), false))
                 .toList();
@@ -186,10 +186,10 @@ class SpendingControllerTest {
 
     @Test
     void saveAnnual_withSelectedMonths_returnsCreatedWithMatchingCount() throws Exception {
-        var typeId = UUID.randomUUID();
-        var template = new SpendingDTO(null, typeId, null, "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 1, 10), null, false);
-        var request = new SpendingAnnualBatchRequestDTO(List.of(template), Set.of(3, 6, 9));
-        var generated = List.of(
+        final var typeId = UUID.randomUUID();
+        final var template = new SpendingDTO(null, typeId, null, "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 1, 10), null, false);
+        final var request = new SpendingAnnualBatchRequestDTO(List.of(template), Set.of(3, 6, 9));
+        final var generated = List.of(
                 new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 10), false),
                 new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 10), false),
                 new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 10), false));
@@ -205,7 +205,7 @@ class SpendingControllerTest {
 
     @Test
     void saveAnnual_withEmptySpendingsList_returnsBadRequest() throws Exception {
-        var request = new SpendingAnnualBatchRequestDTO(List.of(), null);
+        final var request = new SpendingAnnualBatchRequestDTO(List.of(), null);
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
                         .with(auth())
@@ -216,7 +216,7 @@ class SpendingControllerTest {
 
     @Test
     void saveAnnual_withInvalidMonth_returnsBadRequest() throws Exception {
-        var payload = "{\"spendings\":[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":150,\"date\":\"2026-01-10\",\"wasPaid\":false}],\"months\":[13]}";
+        final var payload = "{\"spendings\":[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":150,\"date\":\"2026-01-10\",\"wasPaid\":false}],\"months\":[13]}";
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
                         .with(auth())
@@ -227,7 +227,7 @@ class SpendingControllerTest {
 
     @Test
     void totalByType_withAuth_returnsGroupedTotals() throws Exception {
-        var typeId = UUID.randomUUID();
+        final var typeId = UUID.randomUUID();
         when(spendingService.totalByType(2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Condomínio", BigDecimal.valueOf(9600))));
 
         mockMvc.perform(get(API_V1_SPENDINGS + "/by-type").param("year", "2026").with(auth()))
@@ -238,9 +238,9 @@ class SpendingControllerTest {
 
     @Test
     void history_withAuth_returnsRevisions() throws Exception {
-        var id = UUID.randomUUID();
-        var typeId = UUID.randomUUID();
-        var revision = new SpendingRevisionDTO(1, LocalDateTime.now(), OWNER, "ADD", id, typeId, "Descrição de teste",
+        final var id = UUID.randomUUID();
+        final var typeId = UUID.randomUUID();
+        final var revision = new SpendingRevisionDTO(1, LocalDateTime.now(), OWNER, "ADD", id, typeId, "Descrição de teste",
                 BigDecimal.valueOf(300), LocalDate.now(), LocalDate.now(), false);
         when(auditService.findSpendingHistory(id, OWNER)).thenReturn(List.of(revision));
 

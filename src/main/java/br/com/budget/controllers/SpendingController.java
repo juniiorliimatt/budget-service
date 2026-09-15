@@ -44,51 +44,50 @@ public class SpendingController {
   private final SpendingService spendingService;
   private final AuditService auditService;
 
-  public SpendingController(SpendingService spendingService, AuditService auditService) {
+  public SpendingController(final SpendingService spendingService, final AuditService auditService) {
     this.spendingService = spendingService;
     this.auditService = auditService;
   }
 
   /** {@code month}+{@code year} e {@code typeId} são opcionais e combináveis. */
   @GetMapping
-  public ResponseEntity<Page<SpendingDTO>> search(@RequestParam(required = false) Integer month,
-                                                    @RequestParam(required = false) Integer year,
-                                                    @RequestParam(required = false) UUID typeId,
-                                                    @PageableDefault(sort = {"date", "referenceDate"}, direction = Sort.Direction.DESC)
-                                                    Pageable pageable, Authentication authentication) {
+  public ResponseEntity<Page<SpendingDTO>> search(@RequestParam(required = false) final Integer month,
+                                                    @RequestParam(required = false) final Integer year,
+                                                    @RequestParam(required = false) final UUID typeId,
+                                                    @PageableDefault(sort = {"date", "referenceDate"}, direction = Sort.Direction.DESC) final Pageable pageable, final Authentication authentication) {
     return ResponseEntity.ok(spendingService.search(month, year, typeId, authentication.getName(), pageable));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<SpendingDTO> findById(@PathVariable UUID id, Authentication authentication) {
+  public ResponseEntity<SpendingDTO> findById(@PathVariable final UUID id, final Authentication authentication) {
     return ResponseEntity.ok(spendingService.findById(id, authentication.getName()));
   }
 
   /** Histórico de revisões (Hibernate Envers) — só do dono do lançamento. */
   @GetMapping("/{id}/history")
-  public ResponseEntity<List<SpendingRevisionDTO>> history(@PathVariable UUID id, Authentication authentication) {
+  public ResponseEntity<List<SpendingRevisionDTO>> history(@PathVariable final UUID id, final Authentication authentication) {
     return ResponseEntity.ok(auditService.findSpendingHistory(id, authentication.getName()));
   }
 
   /** Mesmos filtros de {@link #search}, soma o {@code value} em vez de paginar. */
   @GetMapping("/total")
-  public ResponseEntity<TotalDTO> total(@RequestParam(required = false) Integer month,
-                                         @RequestParam(required = false) Integer year,
-                                         @RequestParam(required = false) UUID typeId,
-                                         Authentication authentication) {
+  public ResponseEntity<TotalDTO> total(@RequestParam(required = false) final Integer month,
+                                         @RequestParam(required = false) final Integer year,
+                                         @RequestParam(required = false) final UUID typeId,
+                                         final Authentication authentication) {
     return ResponseEntity.ok(spendingService.total(month, year, typeId, authentication.getName()));
   }
 
   /** Soma agrupada por tipo no ano inteiro (ex.: total de "Condomínio" em 2026) — tela de metas. */
   @GetMapping("/by-type")
-  public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam int year, Authentication authentication) {
+  public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year, final Authentication authentication) {
     return ResponseEntity.ok(spendingService.totalByType(year, authentication.getName()));
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  public ResponseEntity<SpendingDTO> save(@RequestBody @Valid SpendingDTO dto, UriComponentsBuilder uriBuilder,
-                                           Authentication authentication) {
+  public ResponseEntity<SpendingDTO> save(@RequestBody @Valid final SpendingDTO dto, final UriComponentsBuilder uriBuilder,
+                                           final Authentication authentication) {
     final var saved = spendingService.save(dto, authentication.getName());
     final URI uri = uriBuilder.path("/api/v1/spendings/{id}").buildAndExpand(saved.id()).toUri();
     return ResponseEntity.created(uri).body(saved);
@@ -97,8 +96,8 @@ public class SpendingController {
   /** Insere várias despesas de uma vez, numa única transação (tudo ou nada). */
   @PostMapping("/batch")
   @ResponseStatus(HttpStatus.CREATED)
-  public ResponseEntity<List<SpendingDTO>> saveAll(@RequestBody @Valid SpendingBatchRequestDTO batch,
-                                                     Authentication authentication) {
+  public ResponseEntity<List<SpendingDTO>> saveAll(@RequestBody @Valid final SpendingBatchRequestDTO batch,
+                                                     final Authentication authentication) {
     return ResponseEntity.status(HttpStatus.CREATED)
             .body(spendingService.saveAll(batch.spendings(), authentication.getName()));
   }
@@ -106,21 +105,21 @@ public class SpendingController {
   /** Replica uma despesa recorrente (luz, gás, internet) por todos os meses do ano, numa única transação. */
   @PostMapping("/batch/annual")
   @ResponseStatus(HttpStatus.CREATED)
-  public ResponseEntity<List<SpendingDTO>> saveAnnual(@RequestBody @Valid SpendingAnnualBatchRequestDTO request,
-                                                        Authentication authentication) {
+  public ResponseEntity<List<SpendingDTO>> saveAnnual(@RequestBody @Valid final SpendingAnnualBatchRequestDTO request,
+                                                        final Authentication authentication) {
     return ResponseEntity.status(HttpStatus.CREATED)
             .body(spendingService.saveAnnual(request, authentication.getName()));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<SpendingDTO> update(@PathVariable UUID id, @RequestBody @Valid SpendingDTO dto,
-                                             Authentication authentication) {
+  public ResponseEntity<SpendingDTO> update(@PathVariable final UUID id, @RequestBody @Valid final SpendingDTO dto,
+                                             final Authentication authentication) {
     return ResponseEntity.ok(spendingService.update(id, dto, authentication.getName()));
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(@PathVariable UUID id, Authentication authentication) {
+  public void delete(@PathVariable final UUID id, final Authentication authentication) {
     spendingService.delete(id, authentication.getName());
   }
 }

@@ -60,15 +60,15 @@ public class WorkboxTokenIntrospector implements OpaqueTokenIntrospector {
       throw new BadOpaqueTokenException("Token inativo");
     }
 
-    Map<String, Object> attributes = new HashMap<>(result);
-    Object exp = attributes.get("exp");
+      final Map<String, Object> attributes = new HashMap<>(result);
+      final Object exp = attributes.get("exp");
     if (exp instanceof Number number) {
       attributes.put("exp", Instant.ofEpochSecond(number.longValue()));
     }
 
-    @SuppressWarnings("unchecked")
-    List<String> roles = (List<String>) result.getOrDefault("roles", List.of());
-    Collection<GrantedAuthority> authorities = roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
+      @SuppressWarnings("unchecked") final
+              List<String> roles = (List<String>) result.getOrDefault("roles", List.of());
+      final Collection<GrantedAuthority> authorities = roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
 
     return new OAuth2IntrospectionAuthenticatedPrincipal((String) result.get("sub"), attributes, authorities);
   }

@@ -40,32 +40,32 @@ public class RevenueTypeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RevenueTypeDTO> findById(@PathVariable UUID id) {
+    public ResponseEntity<RevenueTypeDTO> findById(@PathVariable final UUID id) {
         return ResponseEntity.ok(service.findById(id));
     }
 
     /** Histórico de revisões (Hibernate Envers) — catálogo global, qualquer usuário autenticado enxerga. */
     @GetMapping("/{id}/history")
-    public ResponseEntity<List<RevenueTypeRevisionDTO>> history(@PathVariable UUID id) {
+    public ResponseEntity<List<RevenueTypeRevisionDTO>> history(@PathVariable final UUID id) {
         return ResponseEntity.ok(auditService.findRevenueTypeHistory(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<RevenueTypeDTO> save(@RequestBody @Valid RevenueTypeDTO dto, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<RevenueTypeDTO> save(@RequestBody @Valid final RevenueTypeDTO dto, final UriComponentsBuilder uriBuilder) {
         final var saved = service.save(dto);
         final URI uri = uriBuilder.path("/api/v1/revenue-types/{id}").buildAndExpand(saved.id()).toUri();
         return ResponseEntity.created(uri).body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RevenueTypeDTO> update(@PathVariable UUID id, @RequestBody @Valid RevenueTypeDTO dto) {
+    public ResponseEntity<RevenueTypeDTO> update(@PathVariable final UUID id, @RequestBody @Valid final RevenueTypeDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public void delete(@PathVariable final UUID id) {
         service.delete(id);
     }
 }

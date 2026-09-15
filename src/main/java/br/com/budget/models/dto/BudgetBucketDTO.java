@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  */
 public record BudgetBucketDTO(BigDecimal target, BigDecimal actual, BigDecimal difference) {
 
-    public static BudgetBucketDTO of(BigDecimal target, BigDecimal actual) {
+    public static BudgetBucketDTO of(final BigDecimal target, final BigDecimal actual) {
         return new BudgetBucketDTO(target, actual, actual.subtract(target));
     }
 }

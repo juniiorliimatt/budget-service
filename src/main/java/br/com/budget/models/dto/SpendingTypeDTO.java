@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record SpendingTypeDTO(UUID id, @NotBlank String name, @NotNull SpendingCategory category) {
-    public static SpendingTypeDTO from(SpendingType entity) {
+    public static SpendingTypeDTO from(final SpendingType entity) {
         return new SpendingTypeDTO(entity.getId(), entity.getName(), entity.getCategory());
     }
 }

@@ -38,7 +38,7 @@ public class SecurityConfig {
     private List<String> allowedOrigins;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, OpaqueTokenIntrospector introspector) throws Exception {
+    public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity, final OpaqueTokenIntrospector introspector) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
         httpSecurity.httpBasic(AbstractHttpConfigurer::disable);
         httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -57,13 +57,13 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        var configuration = new CorsConfiguration();
+        final var configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
-        var source = new UrlBasedCorsConfigurationSource();
+        final var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

@@ -44,51 +44,50 @@ public class RevenueController {
     private final RevenueService revenueService;
     private final AuditService auditService;
 
-    public RevenueController(RevenueService revenueService, AuditService auditService) {
+    public RevenueController(final RevenueService revenueService, final AuditService auditService) {
         this.revenueService = revenueService;
         this.auditService = auditService;
     }
 
     /** {@code month}+{@code year} e {@code typeId} são opcionais e combináveis. */
     @GetMapping
-    public ResponseEntity<Page<RevenueDTO>> search(@RequestParam(required = false) Integer month,
-                                                     @RequestParam(required = false) Integer year,
-                                                     @RequestParam(required = false) UUID typeId,
-                                                     @PageableDefault(sort = {"date", "referenceDate"}, direction = Sort.Direction.DESC)
-                                                     Pageable pageable, Authentication authentication) {
+    public ResponseEntity<Page<RevenueDTO>> search(@RequestParam(required = false) final Integer month,
+                                                     @RequestParam(required = false) final Integer year,
+                                                     @RequestParam(required = false) final UUID typeId,
+                                                     @PageableDefault(sort = {"date", "referenceDate"}, direction = Sort.Direction.DESC) final Pageable pageable, final Authentication authentication) {
         return ResponseEntity.ok(revenueService.search(month, year, typeId, authentication.getName(), pageable));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RevenueDTO> findById(@PathVariable UUID id, Authentication authentication) {
+    public ResponseEntity<RevenueDTO> findById(@PathVariable final UUID id, final Authentication authentication) {
         return ResponseEntity.ok(revenueService.findById(id, authentication.getName()));
     }
 
     /** Histórico de revisões (Hibernate Envers) — só do dono do lançamento. */
     @GetMapping("/{id}/history")
-    public ResponseEntity<List<RevenueRevisionDTO>> history(@PathVariable UUID id, Authentication authentication) {
+    public ResponseEntity<List<RevenueRevisionDTO>> history(@PathVariable final UUID id, final Authentication authentication) {
         return ResponseEntity.ok(auditService.findRevenueHistory(id, authentication.getName()));
     }
 
     /** Mesmos filtros de {@link #search}, soma o {@code value} em vez de paginar. */
     @GetMapping("/total")
-    public ResponseEntity<TotalDTO> total(@RequestParam(required = false) Integer month,
-                                           @RequestParam(required = false) Integer year,
-                                           @RequestParam(required = false) UUID typeId,
-                                           Authentication authentication) {
+    public ResponseEntity<TotalDTO> total(@RequestParam(required = false) final Integer month,
+                                           @RequestParam(required = false) final Integer year,
+                                           @RequestParam(required = false) final UUID typeId,
+                                           final Authentication authentication) {
         return ResponseEntity.ok(revenueService.total(month, year, typeId, authentication.getName()));
     }
 
     /** Soma agrupada por tipo no ano inteiro (ex.: total de "Salário" em 2026) — tela de metas. */
     @GetMapping("/by-type")
-    public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam int year, Authentication authentication) {
+    public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year, final Authentication authentication) {
         return ResponseEntity.ok(revenueService.totalByType(year, authentication.getName()));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<RevenueDTO> save(@RequestBody @Valid RevenueDTO dto, UriComponentsBuilder uriBuilder,
-                                            Authentication authentication) {
+    public ResponseEntity<RevenueDTO> save(@RequestBody @Valid final RevenueDTO dto, final UriComponentsBuilder uriBuilder,
+                                            final Authentication authentication) {
         final var saved = revenueService.save(dto, authentication.getName());
         final URI uri = uriBuilder.path("/api/v1/revenues/{id}").buildAndExpand(saved.id()).toUri();
         return ResponseEntity.created(uri).body(saved);
@@ -97,8 +96,8 @@ public class RevenueController {
     /** Insere várias receitas de uma vez, numa única transação (tudo ou nada). */
     @PostMapping("/batch")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<List<RevenueDTO>> saveAll(@RequestBody @Valid RevenueBatchRequestDTO batch,
-                                                      Authentication authentication) {
+    public ResponseEntity<List<RevenueDTO>> saveAll(@RequestBody @Valid final RevenueBatchRequestDTO batch,
+                                                      final Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(revenueService.saveAll(batch.revenues(), authentication.getName()));
     }
@@ -106,21 +105,21 @@ public class RevenueController {
     /** Replica uma receita recorrente por todos os meses do ano, numa única transação. */
     @PostMapping("/batch/annual")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<List<RevenueDTO>> saveAnnual(@RequestBody @Valid RevenueAnnualBatchRequestDTO request,
-                                                         Authentication authentication) {
+    public ResponseEntity<List<RevenueDTO>> saveAnnual(@RequestBody @Valid final RevenueAnnualBatchRequestDTO request,
+                                                         final Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(revenueService.saveAnnual(request, authentication.getName()));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RevenueDTO> update(@PathVariable UUID id, @RequestBody @Valid RevenueDTO dto,
-                                              Authentication authentication) {
+    public ResponseEntity<RevenueDTO> update(@PathVariable final UUID id, @RequestBody @Valid final RevenueDTO dto,
+                                              final Authentication authentication) {
         return ResponseEntity.ok(revenueService.update(id, dto, authentication.getName()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id, Authentication authentication) {
+    public void delete(@PathVariable final UUID id, final Authentication authentication) {
         revenueService.delete(id, authentication.getName());
     }
 }
