@@ -167,7 +167,8 @@ class SpendingControllerTest {
     @Test
     void saveAnnual_withValidBody_returnsCreatedWithTwelveEntries() throws Exception {
         var typeId = UUID.randomUUID();
-        var request = new SpendingAnnualBatchRequestDTO(typeId, "Conta de luz", BigDecimal.valueOf(150), 2026, null, 10, false);
+        var template = new SpendingDTO(null, typeId, null, "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 1, 10), null, false);
+        var request = new SpendingAnnualBatchRequestDTO(template, null);
         var generated = java.util.stream.IntStream.rangeClosed(1, 12)
                 .mapToObj(month -> new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150),
                         LocalDate.of(2026, month, 10), LocalDate.of(2026, month, 10), false))
@@ -183,8 +184,8 @@ class SpendingControllerTest {
     }
 
     @Test
-    void saveAnnual_withoutDayOfMonth_returnsBadRequest() throws Exception {
-        var payload = "{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":150,\"year\":2026,\"wasPaid\":false}";
+    void saveAnnual_withoutDate_returnsBadRequest() throws Exception {
+        var payload = "{\"spending\":{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":150,\"wasPaid\":false}}";
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
                         .with(auth())

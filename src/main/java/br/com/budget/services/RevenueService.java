@@ -106,13 +106,16 @@ public class RevenueService {
      */
     @Transactional
     public List<RevenueDTO> saveAnnual(final RevenueAnnualBatchRequestDTO request, final String ownerUsername) {
+        final var template = request.revenue();
         final var startMonth = request.startMonth() != null ? request.startMonth() : 1;
+        final var year = template.date().getYear();
+        final var dayOfMonth = template.date().getDayOfMonth();
         final var dtos = IntStream.rangeClosed(startMonth, 12)
                 .mapToObj(month -> {
-                    final var yearMonth = YearMonth.of(request.year(), month);
-                    final var day = Math.min(request.dayOfMonth(), yearMonth.lengthOfMonth());
+                    final var yearMonth = YearMonth.of(year, month);
+                    final var day = Math.min(dayOfMonth, yearMonth.lengthOfMonth());
                     final var date = yearMonth.atDay(day);
-                    return new RevenueDTO(null, request.typeId(), null, request.value(), date, null);
+                    return new RevenueDTO(null, template.typeId(), null, template.value(), date, null);
                 })
                 .toList();
         return saveAll(dtos, ownerUsername);

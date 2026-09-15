@@ -107,14 +107,17 @@ public class SpendingService {
    */
   @Transactional
   public List<SpendingDTO> saveAnnual(final SpendingAnnualBatchRequestDTO request, final String ownerUsername) {
+    final var template = request.spending();
     final var startMonth = request.startMonth() != null ? request.startMonth() : 1;
+    final var year = template.date().getYear();
+    final var dayOfMonth = template.date().getDayOfMonth();
     final var dtos = IntStream.rangeClosed(startMonth, 12)
             .mapToObj(month -> {
-              final var yearMonth = YearMonth.of(request.year(), month);
-              final var day = Math.min(request.dayOfMonth(), yearMonth.lengthOfMonth());
+              final var yearMonth = YearMonth.of(year, month);
+              final var day = Math.min(dayOfMonth, yearMonth.lengthOfMonth());
               final var date = yearMonth.atDay(day);
-              return new SpendingDTO(null, request.typeId(), null, request.description(), request.value(), date,
-                      null, request.wasPaid());
+              return new SpendingDTO(null, template.typeId(), null, template.description(), template.value(), date,
+                      null, template.wasPaid());
             })
             .toList();
     return saveAll(dtos, ownerUsername);
