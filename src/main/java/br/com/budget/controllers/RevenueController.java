@@ -1,5 +1,6 @@
 package br.com.budget.controllers;
 
+import br.com.budget.models.dto.RevenueAnnualBatchRequestDTO;
 import br.com.budget.models.dto.RevenueBatchRequestDTO;
 import br.com.budget.models.dto.RevenueDTO;
 import br.com.budget.models.dto.RevenueRevisionDTO;
@@ -100,6 +101,15 @@ public class RevenueController {
                                                       Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(revenueService.saveAll(batch.revenues(), authentication.getName()));
+    }
+
+    /** Replica uma receita recorrente por todos os meses do ano, numa única transação. */
+    @PostMapping("/batch/annual")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<List<RevenueDTO>> saveAnnual(@RequestBody @Valid RevenueAnnualBatchRequestDTO request,
+                                                         Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(revenueService.saveAnnual(request, authentication.getName()));
     }
 
     @PutMapping("/{id}")

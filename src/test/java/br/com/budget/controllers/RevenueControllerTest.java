@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.com.budget.models.dto.RevenueAnnualBatchRequestDTO;
 import br.com.budget.models.dto.RevenueBatchRequestDTO;
 import br.com.budget.models.dto.RevenueDTO;
 import br.com.budget.models.dto.RevenueRevisionDTO;
@@ -170,6 +171,35 @@ class RevenueControllerTest {
                         .with(auth())
                         .contentType("application/json")
                         .content("[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":100,\"date\":\"2026-09-01\"}]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void saveAnnual_withValidBody_returnsCreatedWithTwelveEntries() throws Exception {
+        var typeId = UUID.randomUUID();
+        var request = new RevenueAnnualBatchRequestDTO(typeId, BigDecimal.valueOf(5000), 2026, null, 5);
+        var generated = java.util.stream.IntStream.rangeClosed(1, 12)
+                .mapToObj(month -> new RevenueDTO(UUID.randomUUID(), typeId, "Salary", BigDecimal.valueOf(5000),
+                        LocalDate.of(2026, month, 5), LocalDate.of(2026, month, 5)))
+                .toList();
+        when(revenueService.saveAnnual(any(), eq(OWNER))).thenReturn(generated);
+
+        mockMvc.perform(post(API_V1_REVENUES + "/batch/annual")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(12));
+    }
+
+    @Test
+    void saveAnnual_withoutDayOfMonth_returnsBadRequest() throws Exception {
+        var payload = "{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":5000,\"year\":2026}";
+
+        mockMvc.perform(post(API_V1_REVENUES + "/batch/annual")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(payload))
                 .andExpect(status().isBadRequest());
     }
 

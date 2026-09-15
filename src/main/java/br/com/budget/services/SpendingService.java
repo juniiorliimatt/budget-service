@@ -1,6 +1,7 @@
 package br.com.budget.services;
 
 import br.com.budget.exceptions.ResourceNotFoundException;
+import br.com.budget.models.dto.SpendingAnnualBatchRequestDTO;
 import br.com.budget.models.dto.SpendingDTO;
 import br.com.budget.models.dto.TotalDTO;
 import br.com.budget.models.dto.TypeTotalDTO;
@@ -14,9 +15,11 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -95,6 +98,26 @@ public class SpendingService {
   @Transactional
   public List<SpendingDTO> saveAll(final List<SpendingDTO> dtos, final String ownerUsername) {
     return dtos.stream().map(dto -> save(dto, ownerUsername)).toList();
+  }
+
+  /**
+   * Replica um template de despesa recorrente (luz, gás, internet) por todos os meses do
+   * ano a partir de {@code startMonth} (default janeiro). Reaproveita {@link #saveAll}
+   * pra manter a mesma atomicidade e validação de tipo do lote genérico.
+   */
+  @Transactional
+  public List<SpendingDTO> saveAnnual(final SpendingAnnualBatchRequestDTO request, final String ownerUsername) {
+    final var startMonth = request.startMonth() != null ? request.startMonth() : 1;
+    final var dtos = IntStream.rangeClosed(startMonth, 12)
+            .mapToObj(month -> {
+              final var yearMonth = YearMonth.of(request.year(), month);
+              final var day = Math.min(request.dayOfMonth(), yearMonth.lengthOfMonth());
+              final var date = yearMonth.atDay(day);
+              return new SpendingDTO(null, request.typeId(), null, request.description(), request.value(), date,
+                      null, request.wasPaid());
+            })
+            .toList();
+    return saveAll(dtos, ownerUsername);
   }
 
   /** Competência default = {@code date} quando o client não informa {@code referenceDate}. */

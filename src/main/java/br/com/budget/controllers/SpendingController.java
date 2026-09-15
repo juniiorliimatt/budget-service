@@ -1,5 +1,6 @@
 package br.com.budget.controllers;
 
+import br.com.budget.models.dto.SpendingAnnualBatchRequestDTO;
 import br.com.budget.models.dto.SpendingBatchRequestDTO;
 import br.com.budget.models.dto.SpendingDTO;
 import br.com.budget.models.dto.SpendingRevisionDTO;
@@ -100,6 +101,15 @@ public class SpendingController {
                                                      Authentication authentication) {
     return ResponseEntity.status(HttpStatus.CREATED)
             .body(spendingService.saveAll(batch.spendings(), authentication.getName()));
+  }
+
+  /** Replica uma despesa recorrente (luz, gás, internet) por todos os meses do ano, numa única transação. */
+  @PostMapping("/batch/annual")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ResponseEntity<List<SpendingDTO>> saveAnnual(@RequestBody @Valid SpendingAnnualBatchRequestDTO request,
+                                                        Authentication authentication) {
+    return ResponseEntity.status(HttpStatus.CREATED)
+            .body(spendingService.saveAnnual(request, authentication.getName()));
   }
 
   @PutMapping("/{id}")
