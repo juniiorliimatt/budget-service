@@ -882,15 +882,22 @@ components:
     RevenueAnnualBatchRequestDTO:
       type: object
       properties:
-        revenue:
-          $ref: "#/components/schemas/RevenueDTO"
-        startMonth:
-          type: integer
-          format: int32
-          maximum: 12
-          minimum: 1
+        months:
+          type: array
+          items:
+            type: integer
+            format: int32
+            maximum: 12
+            minimum: 1
+          uniqueItems: true
+        revenues:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueDTO"
+          maxItems: 500
+          minItems: 0
       required:
-      - revenue
+      - revenues
     RevenueBatchRequestDTO:
       type: object
       properties:
@@ -1001,15 +1008,22 @@ components:
     SpendingAnnualBatchRequestDTO:
       type: object
       properties:
-        spending:
-          $ref: "#/components/schemas/SpendingDTO"
-        startMonth:
-          type: integer
-          format: int32
-          maximum: 12
-          minimum: 1
+        months:
+          type: array
+          items:
+            type: integer
+            format: int32
+            maximum: 12
+            minimum: 1
+          uniqueItems: true
+        spendings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpendingDTO"
+          maxItems: 500
+          minItems: 0
       required:
-      - spending
+      - spendings
     SpendingBatchRequestDTO:
       type: object
       properties:

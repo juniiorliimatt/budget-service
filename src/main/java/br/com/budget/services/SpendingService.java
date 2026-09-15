@@ -100,27 +100,29 @@ public class SpendingService {
     return dtos.stream().map(dto -> save(dto, ownerUsername)).toList();
   }
 
+  private static final List<Integer> ALL_MONTHS = IntStream.rangeClosed(1, 12).boxed().toList();
+
   /**
-   * Replica um template de despesa recorrente (luz, gás, internet) por todos os meses do
-   * ano a partir de {@code startMonth} (default janeiro). Reaproveita {@link #saveAll}
-   * pra manter a mesma atomicidade e validação de tipo do lote genérico.
+   * Replica cada despesa recorrente (luz, gás, internet) do lote pelos meses
+   * selecionados em {@code months} (default: todos os 12, quando omitido/vazio).
+   * Reaproveita {@link #saveAll} pra manter a mesma atomicidade e validação de tipo do
+   * lote genérico.
    */
   @Transactional
   public List<SpendingDTO> saveAnnual(final SpendingAnnualBatchRequestDTO request, final String ownerUsername) {
-    final var template = request.spending();
-    final var startMonth = request.startMonth() != null ? request.startMonth() : 1;
-    final var year = template.date().getYear();
-    final var dayOfMonth = template.date().getDayOfMonth();
-    final var dtos = IntStream.rangeClosed(startMonth, 12)
-            .mapToObj(month -> {
-              final var yearMonth = YearMonth.of(year, month);
-              final var day = Math.min(dayOfMonth, yearMonth.lengthOfMonth());
-              final var date = yearMonth.atDay(day);
-              return new SpendingDTO(null, template.typeId(), null, template.description(), template.value(), date,
-                      null, template.wasPaid());
-            })
+    final var months = request.months() == null || request.months().isEmpty() ? ALL_MONTHS : request.months();
+    final var dtos = request.spendings().stream()
+            .flatMap(template -> months.stream().map(month -> replicateForMonth(template, month)))
             .toList();
     return saveAll(dtos, ownerUsername);
+  }
+
+  /** Ano + dia do mês vêm de {@code template.date()}; dia ajustado (clamp) pro último dia do mês de destino. */
+  private SpendingDTO replicateForMonth(final SpendingDTO template, final int month) {
+    final var yearMonth = YearMonth.of(template.date().getYear(), month);
+    final var day = Math.min(template.date().getDayOfMonth(), yearMonth.lengthOfMonth());
+    return new SpendingDTO(null, template.typeId(), null, template.description(), template.value(),
+            yearMonth.atDay(day), null, template.wasPaid());
   }
 
   /** Competência default = {@code date} quando o client não informa {@code referenceDate}. */

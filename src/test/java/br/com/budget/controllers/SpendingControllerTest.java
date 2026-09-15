@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -165,10 +166,10 @@ class SpendingControllerTest {
     }
 
     @Test
-    void saveAnnual_withValidBody_returnsCreatedWithTwelveEntries() throws Exception {
+    void saveAnnual_withoutMonths_returnsCreatedWithTwelveEntriesPerItem() throws Exception {
         var typeId = UUID.randomUUID();
         var template = new SpendingDTO(null, typeId, null, "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 1, 10), null, false);
-        var request = new SpendingAnnualBatchRequestDTO(template, null);
+        var request = new SpendingAnnualBatchRequestDTO(List.of(template), null);
         var generated = java.util.stream.IntStream.rangeClosed(1, 12)
                 .mapToObj(month -> new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150),
                         LocalDate.of(2026, month, 10), LocalDate.of(2026, month, 10), false))
@@ -184,8 +185,38 @@ class SpendingControllerTest {
     }
 
     @Test
-    void saveAnnual_withoutDate_returnsBadRequest() throws Exception {
-        var payload = "{\"spending\":{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":150,\"wasPaid\":false}}";
+    void saveAnnual_withSelectedMonths_returnsCreatedWithMatchingCount() throws Exception {
+        var typeId = UUID.randomUUID();
+        var template = new SpendingDTO(null, typeId, null, "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 1, 10), null, false);
+        var request = new SpendingAnnualBatchRequestDTO(List.of(template), Set.of(3, 6, 9));
+        var generated = List.of(
+                new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 10), false),
+                new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 10), false),
+                new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 10), false));
+        when(spendingService.saveAnnual(any(), eq(OWNER))).thenReturn(generated);
+
+        mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(3));
+    }
+
+    @Test
+    void saveAnnual_withEmptySpendingsList_returnsBadRequest() throws Exception {
+        var request = new SpendingAnnualBatchRequestDTO(List.of(), null);
+
+        mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void saveAnnual_withInvalidMonth_returnsBadRequest() throws Exception {
+        var payload = "{\"spendings\":[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":150,\"date\":\"2026-01-10\",\"wasPaid\":false}],\"months\":[13]}";
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
                         .with(auth())

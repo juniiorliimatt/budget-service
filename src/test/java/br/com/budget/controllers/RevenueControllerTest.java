@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -175,10 +176,10 @@ class RevenueControllerTest {
     }
 
     @Test
-    void saveAnnual_withValidBody_returnsCreatedWithTwelveEntries() throws Exception {
+    void saveAnnual_withoutMonths_returnsCreatedWithTwelveEntriesPerItem() throws Exception {
         var typeId = UUID.randomUUID();
         var template = new RevenueDTO(null, typeId, null, BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), null);
-        var request = new RevenueAnnualBatchRequestDTO(template, null);
+        var request = new RevenueAnnualBatchRequestDTO(List.of(template), null);
         var generated = java.util.stream.IntStream.rangeClosed(1, 12)
                 .mapToObj(month -> new RevenueDTO(UUID.randomUUID(), typeId, "Salary", BigDecimal.valueOf(5000),
                         LocalDate.of(2026, month, 5), LocalDate.of(2026, month, 5)))
@@ -194,8 +195,37 @@ class RevenueControllerTest {
     }
 
     @Test
-    void saveAnnual_withoutDate_returnsBadRequest() throws Exception {
-        var payload = "{\"revenue\":{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":5000}}";
+    void saveAnnual_withSelectedMonths_returnsCreatedWithMatchingCount() throws Exception {
+        var typeId = UUID.randomUUID();
+        var template = new RevenueDTO(null, typeId, null, BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), null);
+        var request = new RevenueAnnualBatchRequestDTO(List.of(template), Set.of(1, 7));
+        var generated = List.of(
+                new RevenueDTO(UUID.randomUUID(), typeId, "Salary", BigDecimal.valueOf(5000), LocalDate.of(2026, 1, 5), LocalDate.of(2026, 1, 5)),
+                new RevenueDTO(UUID.randomUUID(), typeId, "Salary", BigDecimal.valueOf(5000), LocalDate.of(2026, 7, 5), LocalDate.of(2026, 7, 5)));
+        when(revenueService.saveAnnual(any(), eq(OWNER))).thenReturn(generated);
+
+        mockMvc.perform(post(API_V1_REVENUES + "/batch/annual")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void saveAnnual_withEmptyRevenuesList_returnsBadRequest() throws Exception {
+        var request = new RevenueAnnualBatchRequestDTO(List.of(), null);
+
+        mockMvc.perform(post(API_V1_REVENUES + "/batch/annual")
+                        .with(auth())
+                        .contentType("application/json")
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void saveAnnual_withInvalidMonth_returnsBadRequest() throws Exception {
+        var payload = "{\"revenues\":[{\"typeId\":\"" + UUID.randomUUID() + "\",\"value\":5000,\"date\":\"2026-01-05\"}],\"months\":[0]}";
 
         mockMvc.perform(post(API_V1_REVENUES + "/batch/annual")
                         .with(auth())
