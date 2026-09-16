@@ -1,9 +1,10 @@
 # budget-service
 
 Microserviço de estudo (finanças pessoais) do [monorepo `workbox`](../README.md) —
-**resource server**: valida os JWTs emitidos pelo [`workbox-api`](../workbox-api/README.md)
-(segredo HS256 compartilhado), sem fluxo de login próprio. Primeiro serviço a seguir o
-padrão "um repo/submodule por microserviço" — serve de referência pros próximos.
+**resource server**: valida os access tokens emitidos pelo [`workbox-api`](../workbox-api/README.md)
+via introspecção remota (client credentials), sem fluxo de login próprio e sem conhecer
+nenhum segredo de assinatura de JWT. Primeiro serviço a seguir o padrão "um repo/submodule
+por microserviço" — serve de referência pros próximos.
 
 Também espelhado no [GitHub](https://github.com/juniiorliimatt/budget-service) — todo
 push pro GitLab é replicado automaticamente via git hook. Ver
@@ -13,36 +14,61 @@ push pro GitLab é replicado automaticamente via git hook. Ver
 
 | Camada | Tecnologia |
 |---|---|
-| Linguagem / runtime | Java 26 (toolchain Gradle) |
+| Linguagem / runtime | Java 25 LTS (toolchain Gradle) |
 | Framework | Spring Boot 3.5.16 |
 | Build | Gradle 9.7.1 |
 | Persistência | Spring Data JPA + Hibernate, Liquibase (migrations), schema `budget` próprio |
+| Auditoria | `@CreatedBy`/`@CreatedDate`/etc. (Spring Data JPA) em toda entidade + Hibernate Envers (`@Audited`) com histórico completo de revisões — mesmo padrão do `workbox-api` |
 | Banco | PostgreSQL (dev/prod), H2 em memória (test) |
-| Segurança | Spring Security 6 (OAuth2 resource server), valida JWT do workbox-api |
+| Segurança | Spring Security 6 (OAuth2 resource server, opaque token), valida token via introspecção remota no workbox-api |
 | Documentação de API | springdoc-openapi (Swagger UI + contrato versionado) |
 | Cobertura | JaCoCo |
+| Testes | JUnit 5 + MockMvc (`@WebMvcTest`), Cucumber (BDD, ainda sem `.feature` escritos), Testcontainers pra IT contra Postgres real descartável |
 
 ## Estrutura de pacotes
 
 ```
 br.com.budget
 ├── config/            OpenAPI, Security (resource server), JPA auditing
-├── exceptions/         Exceções de domínio + handler global (RestExceptionHandler)
-└── revenue/
-    ├── controllers/     RevenueController (CRUD REST)
-    ├── dto/             DTOs de entrada/saída
-    ├── entities/         Revenue
-    ├── repositories/     Spring Data JPA
-    └── services/         RevenueService
+├── controllers/       RevenueController, SpendingController, RevenueTypeController,
+│                      SpendingTypeController, BudgetRuleController
+├── exceptions/        Exceções de domínio + handler global (RestExceptionHandler)
+├── models/
+│   ├── dto/           DTOs de entrada/saída
+│   ├── entities/       Revenue, Spending, RevenueType, SpendingType
+│   └── enums/          SpendingCategory (ESSENTIAL/PERSONAL/SAVINGS — regra 50/30/20)
+├── repositories/      Spring Data JPA
+└── services/          RevenueService, SpendingService, RevenueTypeService,
+                       SpendingTypeService, BudgetRuleService
 ```
+
+`RevenueType`/`SpendingType` são catálogos com CRUD próprio (`name` de receita/despesa
+deixou de ser texto livre em `Revenue`/`Spending` — agora é uma referência pro tipo
+cadastrado). `SpendingType` carrega também a `category` da regra 50/30/20. `RevenueType`
+carrega duas flags independentes (ambas default `true`, nunca afetam CRUD normal, busca
+ou total de um tipo específico via `?typeId=`):
+
+- `includeInTotals=false` — tira o tipo do agrupamento por tipo (`GET
+  /revenues/by-type`) e do total anual "de tudo" (`yearly-summary`). Caso de uso:
+  "Caixinha" é sobra de salário de mês anterior recolocada como receita — já contada
+  dentro do próprio "Salário", contar nos dois duplicaria o valor.
+- `includeInMonthlyTotals=false` — tira o tipo do total mensal "de tudo" (resumo
+  mensal, regra 50/30/20). Caso de uso: saldo que sobra de dezembro e é lançado em
+  janeiro pra fechar o ano — não é receita nova daquele mês, mas ainda conta no anual.
 
 ## Autenticação
 
-Este serviço **não emite tokens** — ele confia nos JWTs emitidos por
-`POST /api/auth/login` no `workbox-api`, validados com o mesmo segredo HS256
-(`jwt.secret`/`JWT_SECRET`, mesmo valor default nos dois serviços). Peça um token no
-workbox-api e mande em `Authorization: Bearer <token>` aqui. A claim `roles` do JWT vira
-authority diretamente (sem prefixo adicional, já vem `ROLE_*` do emissor).
+Este serviço **não emite tokens** — confia nos access tokens emitidos por
+`POST /api/v1/auth/login` no `workbox-api`, mas **não os decodifica localmente**: valida
+cada um via introspecção remota (`POST /api/v1/auth/introspect` no `workbox-api`, com
+client credentials HTTP Basic — `INTROSPECTION_CLIENT_ID`/`INTROSPECTION_CLIENT_SECRET`,
+tem que bater com uma linha ativa em `workbox.api_clients`). Isso propaga revogação
+(logout/troca de senha) de forma automática — o que uma decodificação local nunca
+enxergaria. Peça um token no workbox-api e mande em `Authorization: Bearer <token>`
+aqui, como sempre. A claim `roles` do resultado da introspecção vira authority
+diretamente (sem prefixo adicional, já vem `ROLE_*` do emissor). Ver
+[`docs/budget-service-migracao-introspeccao.md`](../docs/budget-service-migracao-introspeccao.md)
+na raiz pra detalhes de implementação.
 
 ## Rodando localmente
 
@@ -51,7 +77,7 @@ Profiles disponíveis (`spring.profiles.active`):
 | Profile | Banco | Uso |
 |---|---|---|
 | `test` | H2 em memória (`ddl-auto=create-drop`) | Testes automatizados, geração do contrato OpenAPI |
-| `dev` (default) | PostgreSQL local via `DATABASE_URL` (default `jdbc:postgresql://localhost:5432/workbox`), schema `budget` | Desenvolvimento |
+| `dev` (default) | PostgreSQL local via `DATABASE_URL` (default `jdbc:postgresql://localhost:7050/workbox`), schema `budget` | Desenvolvimento |
 | `prod` | PostgreSQL via `DATABASE_URL` (obrigatório) | Deploy |
 
 ```bash
@@ -59,17 +85,17 @@ Profiles disponíveis (`spring.profiles.active`):
 ./gradlew bootRun --args='--spring.profiles.active=test'   # sem dependência externa
 ```
 
-Sobe em `PORT` (default **8081** — evita colidir com o `workbox-api`, que usa 8080, ao
+Sobe em `PORT` (default **7052** — evita colidir com o `workbox-api`, que usa 7051, ao
 rodar os dois juntos localmente).
 
 Postgres local sobe via `docker-compose.yml` na raiz do monorepo (ver [README
-raiz](../README.md#rodando-localmente)) na porta **5433**, não 5432 — passe
-`DATABASE_URL=jdbc:postgresql://localhost:5433/workbox`. Banco único (`workbox`)
+raiz](../README.md#rodando-localmente)) na porta **7050**, não 5432 — passe
+`DATABASE_URL=jdbc:postgresql://localhost:7050/workbox`. Banco único (`workbox`)
 compartilhado com o `workbox-api` — este serviço só enxerga o schema `budget`, via o
 role `budget_service` (default de `POSTGRES_USER`/`POSTGRES_PASSWORD`), sem acesso ao
 schema `api` do outro serviço.
 
-CORS: `cors.allowed-origins` (default `http://localhost:5173,http://127.0.0.1:5173`,
+CORS: `cors.allowed-origins` (default `http://localhost:7053,http://127.0.0.1:7053`,
 mesma origem do `workbox-app` em dev) via Spring Security nativo — não um `Filter`
 manual. Origem específica é ecoada (nunca `*`), com `Access-Control-Allow-Credentials:
 true`, para funcionar com `withCredentials: true` no cliente HTTP do frontend.
@@ -91,15 +117,39 @@ acusa diff falso).
 
 Ver também: [AGENTS.md](../AGENTS.md).
 
+## Convenção de commits
+
+Sempre em português (pt-BR), Conventional Commits com o prefixo de tipo em inglês:
+
+```
+<tipo>(<escopo opcional>): <descrição curta e objetiva em português>
+```
+
+Tipos aceitos: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`, `style`, `perf`, `ci`,
+`revert`. Vale pros quatro repositórios do monorepo — regra completa e exemplo em
+[AGENTS.md](../AGENTS.md#convenção-de-mensagens-de-commit).
+
 ## Testes
 
 ```bash
 ./gradlew check
 ```
 
-JUnit 5 + Spring Boot Test + MockMvc, autenticação simulada via
-`SecurityMockMvcRequestPostProcessors.jwt()`.
+JUnit 5 + Spring Boot Test + MockMvc (`@WebMvcTest`, serviços mockados via
+`@MockitoBean`), autenticação simulada via
+`SecurityMockMvcRequestPostProcessors.opaqueToken()` (não `jwt()` — este serviço nunca
+decodifica JWT localmente, ver [Autenticação](#autenticação)).
+
+`RealPostgresSchemaIT` sobe o contexto Spring inteiro contra um Postgres real via
+Testcontainers (não o Postgres de dev compartilhado, porta 7050) — container novo e
+descartável a cada execução, com o mesmo role/schema restrito de produção
+(`budget_service`/`budget`). Existe pra pegar drift entre entidade JPA e changelog
+Liquibase que o H2 (`create-drop`) dos outros testes não reproduz — exige Docker
+disponível pra rodar. Cucumber já está nas dependências (mesma versão do
+`workbox-api`), mas ainda não há nenhum `.feature`/step definition escrito.
 
 ## CI/CD
 
-`.gitlab-ci.yml`: `test` → `contract-drift-check` (contrato em dia) → `build`.
+`.gitlab-ci.yml`: `test` (build + testes) → `contract-drift-check` (contrato em dia) →
+`build` (empacota o JAR). `sonarcloud-check` roda análise estática em merge requests e em
+pushes diretos à `main` (não `develop` — só dispara em MR ou push na branch protegida).
