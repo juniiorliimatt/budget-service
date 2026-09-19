@@ -140,9 +140,9 @@ public class RevenueService {
      * valor real dele, nenhuma das duas flags abaixo se aplica. Sem {@code typeId}
      * (soma "de tudo"):
      * <ul>
-     *   <li>sem {@code month} (anual — caso de {@link BudgetRuleService#yearlySummary})
+     *   <li>sem {@code month} (anual — caso de {@link BudgetRuleService#resumoAnual})
      *   exclui tipos com {@code includeInTotals = false}, mesma regra do
-     *   {@link #totalByType} (ex.: "Caixinha", já contada dentro de outro tipo);</li>
+     *   {@link #totalPorTipo} (ex.: "Caixinha", já contada dentro de outro tipo);</li>
      *   <li>com {@code month} (mensal — resumo mensal, regra 50/30/20) exclui tipos com
      *   {@code includeInMonthlyTotals = false} (ex.: saldo de dezembro lançado em
      *   janeiro pra fechar o ano, que não é receita nova daquele mês).</li>
