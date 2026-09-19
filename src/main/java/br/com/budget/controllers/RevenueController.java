@@ -55,7 +55,7 @@ public class RevenueController {
                                                      @RequestParam(required = false) final Integer year,
                                                      @RequestParam(required = false) final UUID typeId,
                                                      @PageableDefault(sort = {"date", "referenceDate"}, direction = Sort.Direction.DESC) final Pageable pageable, final Authentication authentication) {
-        return ResponseEntity.ok(revenueService.search(month, year, typeId, authentication.getName(), pageable));
+        return ResponseEntity.ok(revenueService.buscar(month, year, typeId, authentication.getName(), pageable));
     }
 
     @GetMapping("/{id}")
@@ -81,7 +81,7 @@ public class RevenueController {
     /** Soma agrupada por tipo no ano inteiro (ex.: total de "Salário" em 2026) — tela de metas. */
     @GetMapping("/by-type")
     public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year, final Authentication authentication) {
-        return ResponseEntity.ok(revenueService.totalByType(year, authentication.getName()));
+        return ResponseEntity.ok(revenueService.totalPorTipo(year, authentication.getName()));
     }
 
     @PostMapping
@@ -108,7 +108,7 @@ public class RevenueController {
     public ResponseEntity<List<RevenueDTO>> saveAnnual(@RequestBody @Valid final RevenueAnnualBatchRequestDTO request,
                                                          final Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(revenueService.saveAnnual(request, authentication.getName()));
+                .body(revenueService.salvarAnual(request, authentication.getName()));
     }
 
     @PutMapping("/{id}")

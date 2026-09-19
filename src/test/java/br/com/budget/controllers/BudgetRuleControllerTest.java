@@ -57,7 +57,7 @@ class BudgetRuleControllerTest {
                 BudgetBucketDTO.of(BigDecimal.valueOf(500), BigDecimal.valueOf(600)),
                 BudgetBucketDTO.of(BigDecimal.valueOf(300), BigDecimal.valueOf(200)),
                 BudgetBucketDTO.of(BigDecimal.valueOf(200), BigDecimal.valueOf(200)));
-        when(budgetRuleService.fiftyThirtyTwenty(9, 2026, OWNER)).thenReturn(dto);
+        when(budgetRuleService.cinquentaTrintaVinte(9, 2026, OWNER)).thenReturn(dto);
 
         mockMvc.perform(get(API_V1_BUDGET_RULES + "/fifty-thirty-twenty")
                         .param("month", "9")
@@ -81,7 +81,7 @@ class BudgetRuleControllerTest {
         final var dto = new MonthlySummaryDTO(
                 BigDecimal.valueOf(5000), BigDecimal.valueOf(3200),
                 BigDecimal.valueOf(2000), BigDecimal.valueOf(1200), BigDecimal.valueOf(1800));
-        when(budgetRuleService.monthlySummary(9, 2026, OWNER)).thenReturn(dto);
+        when(budgetRuleService.resumoMensal(9, 2026, OWNER)).thenReturn(dto);
 
         mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-summary")
                         .param("month", "9")
@@ -104,7 +104,7 @@ class BudgetRuleControllerTest {
     @Test
     void yearlySummary_withAuth_returnsSummary() throws Exception {
         final var dto = new YearlySummaryDTO(BigDecimal.valueOf(60000), BigDecimal.valueOf(42000), BigDecimal.valueOf(18000));
-        when(budgetRuleService.yearlySummary(2026, OWNER)).thenReturn(dto);
+        when(budgetRuleService.resumoAnual(2026, OWNER)).thenReturn(dto);
 
         mockMvc.perform(get(API_V1_BUDGET_RULES + "/yearly-summary")
                         .param("year", "2026")

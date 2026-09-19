@@ -80,7 +80,7 @@ class SpendingControllerTest {
     void search_withAuth_returnsPage() throws Exception {
         final var dto = dto("Mercado", BigDecimal.valueOf(300));
         final Page<SpendingDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
-        when(spendingService.search(isNull(), isNull(), isNull(), eq(OWNER), any())).thenReturn(page);
+        when(spendingService.buscar(isNull(), isNull(), isNull(), eq(OWNER), any())).thenReturn(page);
 
         mockMvc.perform(get(API_V1_SPENDINGS).with(auth()))
                 .andExpect(status().isOk())
@@ -91,7 +91,7 @@ class SpendingControllerTest {
     void search_withMonthYearAndType_passesFiltersThrough() throws Exception {
         final var typeId = UUID.randomUUID();
         final Page<SpendingDTO> page = new PageImpl<>(List.of());
-        when(spendingService.search(eq(9), eq(2026), eq(typeId), eq(OWNER), any())).thenReturn(page);
+        when(spendingService.buscar(eq(9), eq(2026), eq(typeId), eq(OWNER), any())).thenReturn(page);
 
         mockMvc.perform(get(API_V1_SPENDINGS)
                         .param("month", "9")
@@ -176,7 +176,7 @@ class SpendingControllerTest {
                 .mapToObj(month -> new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150),
                         LocalDate.of(2026, month, 10), LocalDate.of(2026, month, 10), false))
                 .toList();
-        when(spendingService.saveAnnual(any(), eq(OWNER))).thenReturn(generated);
+        when(spendingService.salvarAnual(any(), eq(OWNER))).thenReturn(generated);
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
                         .with(auth())
@@ -195,7 +195,7 @@ class SpendingControllerTest {
                 new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 10), false),
                 new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 10), false),
                 new SpendingDTO(UUID.randomUUID(), typeId, "Luz", "Conta de luz", BigDecimal.valueOf(150), LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 10), false));
-        when(spendingService.saveAnnual(any(), eq(OWNER))).thenReturn(generated);
+        when(spendingService.salvarAnual(any(), eq(OWNER))).thenReturn(generated);
 
         mockMvc.perform(post(API_V1_SPENDINGS + "/batch/annual")
                         .with(auth())
@@ -230,7 +230,7 @@ class SpendingControllerTest {
     @Test
     void totalByType_withAuth_returnsGroupedTotals() throws Exception {
         final var typeId = UUID.randomUUID();
-        when(spendingService.totalByType(2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Condomínio", BigDecimal.valueOf(9600))));
+        when(spendingService.totalPorTipo(2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Condomínio", BigDecimal.valueOf(9600))));
 
         mockMvc.perform(get(API_V1_SPENDINGS + "/by-type").param("year", "2026").with(auth()))
                 .andExpect(status().isOk())

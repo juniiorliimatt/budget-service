@@ -37,7 +37,7 @@ public class BudgetRuleService {
     }
 
     @Transactional(readOnly = true)
-    public FiftyThirtyTwentyDTO fiftyThirtyTwenty(final int month, final int year, final String ownerUsername) {
+    public FiftyThirtyTwentyDTO cinquentaTrintaVinte(final int month, final int year, final String ownerUsername) {
         final var totalRevenue = revenueService.total(month, year, null, ownerUsername).getTotal();
 
         final var essentialTarget = totalRevenue.multiply(ESSENTIAL_PERCENTAGE);
@@ -79,7 +79,7 @@ public class BudgetRuleService {
      * mês assumindo que toda despesa em aberto será quitada dentro do próprio mês.
      */
     @Transactional(readOnly = true)
-    public MonthlySummaryDTO monthlySummary(final int month, final int year, final String ownerUsername) {
+    public MonthlySummaryDTO resumoMensal(final int month, final int year, final String ownerUsername) {
         final var totalRevenue = revenueService.total(month, year, null, ownerUsername).getTotal();
         final var totalSpending = spendingService.total(month, year, null, ownerUsername).getTotal();
         final var totalPaid = sumByPaidStatus(month, year, ownerUsername, true);
@@ -91,7 +91,7 @@ public class BudgetRuleService {
 
     /** Resumo do ano inteiro (competência) — base da tela de metas. */
     @Transactional(readOnly = true)
-    public YearlySummaryDTO yearlySummary(final int year, final String ownerUsername) {
+    public YearlySummaryDTO resumoAnual(final int year, final String ownerUsername) {
         final var totalRevenue = revenueService.total(null, year, null, ownerUsername).getTotal();
         final var totalSpending = spendingService.total(null, year, null, ownerUsername).getTotal();
         return new YearlySummaryDTO(totalRevenue, totalSpending, totalRevenue.subtract(totalSpending));

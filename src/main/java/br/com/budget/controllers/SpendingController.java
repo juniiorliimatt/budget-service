@@ -55,7 +55,7 @@ public class SpendingController {
                                                     @RequestParam(required = false) final Integer year,
                                                     @RequestParam(required = false) final UUID typeId,
                                                     @PageableDefault(sort = {"date", "referenceDate"}, direction = Sort.Direction.DESC) final Pageable pageable, final Authentication authentication) {
-    return ResponseEntity.ok(spendingService.search(month, year, typeId, authentication.getName(), pageable));
+    return ResponseEntity.ok(spendingService.buscar(month, year, typeId, authentication.getName(), pageable));
   }
 
   @GetMapping("/{id}")
@@ -81,7 +81,7 @@ public class SpendingController {
   /** Soma agrupada por tipo no ano inteiro (ex.: total de "Condomínio" em 2026) — tela de metas. */
   @GetMapping("/by-type")
   public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year, final Authentication authentication) {
-    return ResponseEntity.ok(spendingService.totalByType(year, authentication.getName()));
+    return ResponseEntity.ok(spendingService.totalPorTipo(year, authentication.getName()));
   }
 
   @PostMapping
@@ -108,7 +108,7 @@ public class SpendingController {
   public ResponseEntity<List<SpendingDTO>> saveAnnual(@RequestBody @Valid final SpendingAnnualBatchRequestDTO request,
                                                         final Authentication authentication) {
     return ResponseEntity.status(HttpStatus.CREATED)
-            .body(spendingService.saveAnnual(request, authentication.getName()));
+            .body(spendingService.salvarAnual(request, authentication.getName()));
   }
 
   @PutMapping("/{id}")

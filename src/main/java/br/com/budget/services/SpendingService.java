@@ -52,7 +52,7 @@ public class SpendingService {
   }
 
   @Transactional(readOnly = true)
-  public Page<SpendingDTO> search(final Integer month, final Integer year, final UUID typeId,
+  public Page<SpendingDTO> buscar(final Integer month, final Integer year, final UUID typeId,
                                    final String ownerUsername, final Pageable pageable) {
     final Specification<Spending> spec = (root, query, cb) ->
             cb.and(buildPredicates(root, cb, month, year, typeId, ownerUsername).toArray(new Predicate[0]));
@@ -110,7 +110,7 @@ public class SpendingService {
    * lote genérico.
    */
   @Transactional
-  public List<SpendingDTO> saveAnnual(final SpendingAnnualBatchRequestDTO request, final String ownerUsername) {
+  public List<SpendingDTO> salvarAnual(final SpendingAnnualBatchRequestDTO request, final String ownerUsername) {
     final var months = request.months() == null || request.months().isEmpty() ? ALL_MONTHS : request.months();
     final var dtos = request.spendings().stream()
             .flatMap(template -> months.stream().map(month -> replicateForMonth(template, month)))
@@ -136,7 +136,7 @@ public class SpendingService {
     spendingRepository.delete(findEntityById(id, ownerUsername));
   }
 
-  /** Total por mês/ano e/ou tipo (mesmos filtros de {@link #search}, ambos opcionais). */
+  /** Total por mês/ano e/ou tipo (mesmos filtros de {@link #buscar}, ambos opcionais). */
   @Transactional(readOnly = true)
   public TotalDTO total(final Integer month, final Integer year, final UUID typeId, final String ownerUsername) {
     final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -172,7 +172,7 @@ public class SpendingService {
 
   /** Soma agrupada por tipo no ano inteiro (competência) — base da tela de metas. */
   @Transactional(readOnly = true)
-  public List<TypeTotalDTO> totalByType(final int year, final String ownerUsername) {
+  public List<TypeTotalDTO> totalPorTipo(final int year, final String ownerUsername) {
     final var cb = entityManager.getCriteriaBuilder();
     final var query = cb.createQuery(Object[].class);
     final var root = query.from(Spending.class);

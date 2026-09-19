@@ -26,19 +26,19 @@ public class BudgetRuleController {
     @GetMapping("/fifty-thirty-twenty")
     public ResponseEntity<FiftyThirtyTwentyDTO> fiftyThirtyTwenty(@RequestParam final int month, @RequestParam final int year,
                                                                    final Authentication authentication) {
-        return ResponseEntity.ok(budgetRuleService.fiftyThirtyTwenty(month, year, authentication.getName()));
+        return ResponseEntity.ok(budgetRuleService.cinquentaTrintaVinte(month, year, authentication.getName()));
     }
 
     /** Total de receitas, despesas e saldo do mês — base da tela inicial. */
     @GetMapping("/monthly-summary")
     public ResponseEntity<MonthlySummaryDTO> monthlySummary(@RequestParam final int month, @RequestParam final int year,
                                                               final Authentication authentication) {
-        return ResponseEntity.ok(budgetRuleService.monthlySummary(month, year, authentication.getName()));
+        return ResponseEntity.ok(budgetRuleService.resumoMensal(month, year, authentication.getName()));
     }
 
     /** Total de receitas, despesas e saldo do ano inteiro — base da tela de metas. */
     @GetMapping("/yearly-summary")
     public ResponseEntity<YearlySummaryDTO> yearlySummary(@RequestParam final int year, final Authentication authentication) {
-        return ResponseEntity.ok(budgetRuleService.yearlySummary(year, authentication.getName()));
+        return ResponseEntity.ok(budgetRuleService.resumoAnual(year, authentication.getName()));
     }
 }
