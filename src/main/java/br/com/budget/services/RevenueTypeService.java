@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Catálogo global de tipos de receita — nome único (case-insensitive), sem dono. */
 @Service
 public class RevenueTypeService {
 
@@ -38,6 +39,7 @@ public class RevenueTypeService {
         return RevenueTypeDTO.from(findEntityById(id));
     }
 
+    /** {@code includeInTotals}/{@code includeInMonthlyTotals} omitidos no insert assumem {@code true} (ver {@link RevenueTypeDTO}). */
     @Transactional
     public RevenueTypeDTO save(final RevenueTypeDTO dto) {
         if (repository.existsByNameIgnoreCase(dto.name())) {

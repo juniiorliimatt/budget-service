@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Catálogo global de tipos de despesa — nome único (case-insensitive) por categoria, sem dono. */
 @Service
 public class SpendingTypeService {
 

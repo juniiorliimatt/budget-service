@@ -51,6 +51,7 @@ public class AuditService {
         this.spendingTypeService = spendingTypeService;
     }
 
+    /** {@code revenueService.findById} não é descartável: é a checagem de dono/existência (404 se falhar) antes de consultar o Envers. */
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public List<RevenueRevisionDTO> findRevenueHistory(final UUID id, final String ownerUsername) {
@@ -82,6 +83,7 @@ public class AuditService {
                 .toList();
     }
 
+    /** {@code spendingService.findById} não é descartável: é a checagem de dono/existência (404 se falhar) antes de consultar o Envers. */
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public List<SpendingRevisionDTO> findSpendingHistory(final UUID id, final String ownerUsername) {
@@ -115,6 +117,7 @@ public class AuditService {
                 .toList();
     }
 
+    /** {@code revenueTypeService.findById} só existe pra dar 404 antes de consultar o Envers — catálogo global, sem checagem de dono. */
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public List<RevenueTypeRevisionDTO> findRevenueTypeHistory(final UUID id) {
@@ -145,6 +148,7 @@ public class AuditService {
                 .toList();
     }
 
+    /** {@code spendingTypeService.findById} só existe pra dar 404 antes de consultar o Envers — catálogo global, sem checagem de dono. */
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public List<SpendingTypeRevisionDTO> findSpendingTypeHistory(final UUID id) {

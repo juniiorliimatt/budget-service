@@ -22,12 +22,14 @@ public class BudgetRuleController {
         this.budgetRuleService = budgetRuleService;
     }
 
+    /** Divide o mês pela regra 50/30/20 (necessidades/desejos/poupança) com base nas receitas e despesas lançadas. */
     @GetMapping("/fifty-thirty-twenty")
     public ResponseEntity<FiftyThirtyTwentyDTO> fiftyThirtyTwenty(@RequestParam final int month, @RequestParam final int year,
                                                                    final Authentication authentication) {
         return ResponseEntity.ok(budgetRuleService.fiftyThirtyTwenty(month, year, authentication.getName()));
     }
 
+    /** Total de receitas, despesas e saldo do mês — base da tela inicial. */
     @GetMapping("/monthly-summary")
     public ResponseEntity<MonthlySummaryDTO> monthlySummary(@RequestParam final int month, @RequestParam final int year,
                                                               final Authentication authentication) {

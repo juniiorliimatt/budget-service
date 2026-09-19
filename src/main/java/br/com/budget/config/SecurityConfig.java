@@ -37,6 +37,7 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins:http://localhost:7053,http://127.0.0.1:7053}")
     private List<String> allowedOrigins;
 
+    /** Filter chain única do serviço — todo endpoint exige token opaco válido, exceto health e Swagger. */
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity, final OpaqueTokenIntrospector introspector) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
@@ -55,6 +56,7 @@ public class SecurityConfig {
         return httpSecurity.build();
     }
 
+    /** Origens liberadas pra chamadas com credenciais — configurável via {@code cors.allowed-origins}, default aponta pro workbox-app local. */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         final var configuration = new CorsConfiguration();
@@ -68,6 +70,7 @@ public class SecurityConfig {
         return source;
     }
 
+    /** Introspector custom ({@link WorkboxTokenIntrospector}) que chama o endpoint de introspecção do workbox-api via client credentials — não usa nenhuma implementação padrão do Spring porque o token validado é opaco (não JWT decodificável aqui). */
     @Bean
     public OpaqueTokenIntrospector opaqueTokenIntrospector() {
         return new WorkboxTokenIntrospector(RestClient.create(), introspectionUri,
