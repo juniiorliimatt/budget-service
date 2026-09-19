@@ -9,6 +9,7 @@ import br.com.budget.repositories.SpendingRepository;
 import br.com.budget.repositories.SpendingTypeRepository;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,14 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SpendingTypeService {
 
-    private static final String NOT_FOUND = "Spending type not found";
-
     private final SpendingTypeRepository repository;
     private final SpendingRepository spendingRepository;
+    private final MessageSourceAccessor messages;
 
-    public SpendingTypeService(final SpendingTypeRepository repository, final SpendingRepository spendingRepository) {
+    public SpendingTypeService(final SpendingTypeRepository repository, final SpendingRepository spendingRepository,
+                                final MessageSourceAccessor messages) {
         this.repository = repository;
         this.spendingRepository = spendingRepository;
+        this.messages = messages;
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +41,7 @@ public class SpendingTypeService {
     @Transactional
     public SpendingTypeDTO save(final SpendingTypeDTO dto) {
         if (repository.existsByNameIgnoreCase(dto.name())) {
-            throw new DuplicateResourceException("Spending type already exists: " + dto.name());
+            throw new DuplicateResourceException(messages.getMessage("spendingType.jaExiste", new Object[]{dto.name()}));
         }
         final var saved = repository.save(SpendingType.builder().name(dto.name()).category(dto.category()).build());
         return SpendingTypeDTO.from(saved);
@@ -49,7 +51,7 @@ public class SpendingTypeService {
     public SpendingTypeDTO update(final UUID id, final SpendingTypeDTO dto) {
         final var entity = findEntityById(id);
         if (repository.existsByNameIgnoreCaseAndIdNot(dto.name(), id)) {
-            throw new DuplicateResourceException("Spending type already exists: " + dto.name());
+            throw new DuplicateResourceException(messages.getMessage("spendingType.jaExiste", new Object[]{dto.name()}));
         }
         entity.setName(dto.name());
         entity.setCategory(dto.category());
@@ -67,13 +69,12 @@ public class SpendingTypeService {
         final var entity = findEntityById(id);
         final var usageCount = spendingRepository.countByType_Id(id);
         if (usageCount > 0) {
-            throw new ResourceInUseException("Cannot delete spending type '%s': still referenced by %d spending(s)"
-                    .formatted(entity.getName(), usageCount));
+            throw new ResourceInUseException(messages.getMessage("spendingType.emUso", new Object[]{entity.getName(), usageCount}));
         }
         repository.delete(entity);
     }
 
     private SpendingType findEntityById(final UUID id) {
-        return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException(NOT_FOUND));
+        return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException(messages.getMessage("spendingType.naoEncontrado")));
     }
 }

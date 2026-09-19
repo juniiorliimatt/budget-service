@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -26,6 +27,12 @@ public class RestExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(RestExceptionHandler.class);
 
+    private final MessageSourceAccessor messages;
+
+    public RestExceptionHandler(final MessageSourceAccessor messages) {
+        this.messages = messages;
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleResourceNotFound(final ResourceNotFoundException exception) {
         return problem(HttpStatus.NOT_FOUND, exception.getMessage());
@@ -43,7 +50,7 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleMethodArgumentNotValid(final MethodArgumentNotValidException exception) {
-        final var detail = problem(HttpStatus.BAD_REQUEST, "Validation failed");
+        final var detail = problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.validacaoFalhou"));
         detail.setProperty("errors", exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> Map.of("field", error.getField(), "message", String.valueOf(error.getDefaultMessage())))
                 .toList());
@@ -59,7 +66,7 @@ public class RestExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrityViolation(final DataIntegrityViolationException exception, final HttpServletRequest request) {
         logger.error("Data integrity violation on {}", request.getRequestURI(), exception);
-        return problem(HttpStatus.CONFLICT, "Cannot delete: this record is still in use by other data.");
+        return problem(HttpStatus.CONFLICT, messages.getMessage("erro.registroEmUso"));
     }
 
     /**
@@ -71,13 +78,13 @@ public class RestExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleMessageNotReadable(final HttpMessageNotReadableException exception) {
-        return problem(HttpStatus.BAD_REQUEST, "Malformed JSON request body");
+        return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.jsonMalFormado"));
     }
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnexpected(final Exception exception, final HttpServletRequest request) {
         logger.error("Unhandled exception on {}", request.getRequestURI(), exception);
-        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error");
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, messages.getMessage("erro.inesperado"));
     }
 
     private ProblemDetail problem(final HttpStatus status, final String detail) {

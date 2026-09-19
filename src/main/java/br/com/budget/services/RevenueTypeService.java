@@ -9,6 +9,7 @@ import br.com.budget.repositories.RevenueRepository;
 import br.com.budget.repositories.RevenueTypeRepository;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,14 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RevenueTypeService {
 
-    private static final String NOT_FOUND = "Revenue type not found";
-
     private final RevenueTypeRepository repository;
     private final RevenueRepository revenueRepository;
+    private final MessageSourceAccessor messages;
 
-    public RevenueTypeService(final RevenueTypeRepository repository, final RevenueRepository revenueRepository) {
+    public RevenueTypeService(final RevenueTypeRepository repository, final RevenueRepository revenueRepository,
+                               final MessageSourceAccessor messages) {
         this.repository = repository;
         this.revenueRepository = revenueRepository;
+        this.messages = messages;
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +41,7 @@ public class RevenueTypeService {
     @Transactional
     public RevenueTypeDTO save(final RevenueTypeDTO dto) {
         if (repository.existsByNameIgnoreCase(dto.name())) {
-            throw new DuplicateResourceException("Revenue type already exists: " + dto.name());
+            throw new DuplicateResourceException(messages.getMessage("revenueType.jaExiste", new Object[]{dto.name()}));
         }
         final var saved = repository.save(RevenueType.builder().name(dto.name())
                 .includeInTotals(dto.includeInTotals() == null || dto.includeInTotals())
@@ -52,7 +54,7 @@ public class RevenueTypeService {
     public RevenueTypeDTO update(final UUID id, final RevenueTypeDTO dto) {
         final var entity = findEntityById(id);
         if (repository.existsByNameIgnoreCaseAndIdNot(dto.name(), id)) {
-            throw new DuplicateResourceException("Revenue type already exists: " + dto.name());
+            throw new DuplicateResourceException(messages.getMessage("revenueType.jaExiste", new Object[]{dto.name()}));
         }
         entity.setName(dto.name());
         // omitido no PUT preserva o valor atual, nunca reseta pra true silenciosamente.
@@ -76,13 +78,12 @@ public class RevenueTypeService {
         final var entity = findEntityById(id);
         final var usageCount = revenueRepository.countByType_Id(id);
         if (usageCount > 0) {
-            throw new ResourceInUseException("Cannot delete revenue type '%s': still referenced by %d revenue(s)"
-                    .formatted(entity.getName(), usageCount));
+            throw new ResourceInUseException(messages.getMessage("revenueType.emUso", new Object[]{entity.getName(), usageCount}));
         }
         repository.delete(entity);
     }
 
     private RevenueType findEntityById(final UUID id) {
-        return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException(NOT_FOUND));
+        return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException(messages.getMessage("revenueType.naoEncontrado")));
     }
 }

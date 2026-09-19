@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,19 +36,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SpendingService {
 
-  private static final String SPENDING_NOT_FOUND = "Spending not found";
-  private static final String SPENDING_TYPE_NOT_FOUND = "Spending type not found";
-
   private final SpendingRepository spendingRepository;
   private final SpendingTypeRepository spendingTypeRepository;
   private final EntityManager entityManager;
+  private final MessageSourceAccessor messages;
 
   public SpendingService(final SpendingRepository spendingRepository,
                           final SpendingTypeRepository spendingTypeRepository,
-                          final EntityManager entityManager) {
+                          final EntityManager entityManager,
+                          final MessageSourceAccessor messages) {
     this.spendingRepository = spendingRepository;
     this.spendingTypeRepository = spendingTypeRepository;
     this.entityManager = entityManager;
+    this.messages = messages;
   }
 
   @Transactional(readOnly = true)
@@ -195,10 +196,10 @@ public class SpendingService {
 
   private Spending findEntityById(final UUID id, final String ownerUsername) {
     return spendingRepository.findByIdAndOwnerUsername(id, ownerUsername)
-            .orElseThrow(() -> new ResourceNotFoundException(SPENDING_NOT_FOUND));
+            .orElseThrow(() -> new ResourceNotFoundException(messages.getMessage("spending.naoEncontrada")));
   }
 
   private SpendingType requireType(final UUID typeId) {
-    return spendingTypeRepository.findById(typeId).orElseThrow(() -> new ResourceNotFoundException(SPENDING_TYPE_NOT_FOUND));
+    return spendingTypeRepository.findById(typeId).orElseThrow(() -> new ResourceNotFoundException(messages.getMessage("spendingType.naoEncontrado")));
   }
 }

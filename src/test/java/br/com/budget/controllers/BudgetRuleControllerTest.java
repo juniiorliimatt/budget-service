@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
@@ -23,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @ActiveProfiles("test")
+@Import(br.com.budget.config.MessageConfig.class)
 @WebMvcTest(BudgetRuleController.class)
 @MockitoBean(types = JpaMetamodelMappingContext.class)
 class BudgetRuleControllerTest {

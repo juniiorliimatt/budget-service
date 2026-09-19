@@ -42,7 +42,7 @@ public class RevenueType {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotBlank(message = "Required field name")
+    @NotBlank(message = "{validacao.nomeObrigatorio}")
     @Column(nullable = false, unique = true, length = 50)
     private String name;
 
@@ -53,7 +53,7 @@ public class RevenueType {
      * quando entrou; incluir de novo aqui duplicaria o valor no anual. Não afeta total
      * mensal nem total de um tipo específico. Default {@code true} quando omitido.
      */
-    @NotNull(message = "Required field includeInTotals")
+    @NotNull(message = "{validacao.incluirNosTotaisObrigatorio}")
     @Column(name = "include_in_totals", nullable = false)
     private Boolean includeInTotals;
 
@@ -63,7 +63,7 @@ public class RevenueType {
      * ano; contar em janeiro infla o mês com dinheiro que não é receita nova daquele
      * mês. Conta normalmente no anual e no by-type. Default {@code true} quando omitido.
      */
-    @NotNull(message = "Required field includeInMonthlyTotals")
+    @NotNull(message = "{validacao.incluirNosTotaisMensaisObrigatorio}")
     @Column(name = "include_in_monthly_totals", nullable = false)
     private Boolean includeInMonthlyTotals;
 

@@ -45,7 +45,7 @@ public class Spending implements Serializable {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
-  @NotNull(message = "Required field type")
+  @NotNull(message = "{validacao.tipoObrigatorio}")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "spending_type_id", nullable = false)
   private SpendingType type;
@@ -54,11 +54,11 @@ public class Spending implements Serializable {
   private String description;
 
   @Column(nullable = false)
-  @NotNull(message = "Required field value")
+  @NotNull(message = "{validacao.valorObrigatorio}")
   private BigDecimal value;
 
   @Column(nullable = false)
-  @NotNull(message = "Required field date")
+  @NotNull(message = "{validacao.dataObrigatoria}")
   private LocalDate date;
 
   /**
@@ -66,15 +66,15 @@ public class Spending implements Serializable {
    * filtro/total/regra por mês/ano, não {@code date}. Pode divergir de {@code date}
    * (ex.: conta paga adiantado em outro mês). Default = {@code date} quando omitida.
    */
-  @NotNull(message = "Required field referenceDate")
+  @NotNull(message = "{validacao.dataReferenciaObrigatoria}")
   @Column(name = "reference_date", nullable = false)
   private LocalDate referenceDate;
 
-  @NotNull(message = "Required field wasPaid")
+  @NotNull(message = "{validacao.pagoObrigatorio}")
   private Boolean wasPaid;
 
   /** Username (subject da introspecção) do dono do lançamento — nunca vem do client. */
-  @NotBlank(message = "Required field ownerUsername")
+  @NotBlank(message = "{validacao.donoObrigatorio}")
   @Column(name = "owner_username", nullable = false, updatable = false, length = 255)
   private String ownerUsername;
 

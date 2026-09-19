@@ -45,12 +45,12 @@ public class SpendingType {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotBlank(message = "Required field name")
+    @NotBlank(message = "{validacao.nomeObrigatorio}")
     @Column(nullable = false, unique = true, length = 50)
     private String name;
 
     /** Classificação da regra 50/30/20 — ver {@link SpendingCategory}. */
-    @NotNull(message = "Required field category")
+    @NotNull(message = "{validacao.categoriaObrigatoria}")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private SpendingCategory category;

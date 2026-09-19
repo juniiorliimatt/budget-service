@@ -48,16 +48,16 @@ public class Revenue {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotNull(message = "Required field type")
+    @NotNull(message = "{validacao.tipoObrigatorio}")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "revenue_type_id", nullable = false)
     private RevenueType type;
 
-    @NotNull(message = "Required field value")
+    @NotNull(message = "{validacao.valorObrigatorio}")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal value;
 
-    @NotNull(message = "Required field date")
+    @NotNull(message = "{validacao.dataObrigatoria}")
     @Column(nullable = false)
     private LocalDate date;
 
@@ -67,12 +67,12 @@ public class Revenue {
      * (ex.: salário recebido dia 30 que custeia as contas do mês seguinte deve ter
      * {@code referenceDate} no mês seguinte). Default = {@code date} quando omitida.
      */
-    @NotNull(message = "Required field referenceDate")
+    @NotNull(message = "{validacao.dataReferenciaObrigatoria}")
     @Column(name = "reference_date", nullable = false)
     private LocalDate referenceDate;
 
     /** Username (subject da introspecção) do dono do lançamento — nunca vem do client. */
-    @NotBlank(message = "Required field ownerUsername")
+    @NotBlank(message = "{validacao.donoObrigatorio}")
     @Column(name = "owner_username", nullable = false, updatable = false, length = 255)
     private String ownerUsername;
 

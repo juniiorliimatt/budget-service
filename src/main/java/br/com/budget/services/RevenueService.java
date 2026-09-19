@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -38,19 +39,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RevenueService {
 
-    private static final String REVENUE_NOT_FOUND = "Revenue not found";
-    private static final String REVENUE_TYPE_NOT_FOUND = "Revenue type not found";
-
     private final RevenueRepository revenueRepository;
     private final RevenueTypeRepository revenueTypeRepository;
     private final EntityManager entityManager;
+    private final MessageSourceAccessor messages;
 
     public RevenueService(final RevenueRepository revenueRepository,
                            final RevenueTypeRepository revenueTypeRepository,
-                           final EntityManager entityManager) {
+                           final EntityManager entityManager,
+                           final MessageSourceAccessor messages) {
         this.revenueRepository = revenueRepository;
         this.revenueTypeRepository = revenueTypeRepository;
         this.entityManager = entityManager;
+        this.messages = messages;
     }
 
     @Transactional(readOnly = true)
@@ -211,10 +212,10 @@ public class RevenueService {
 
     private Revenue findEntityById(final UUID id, final String ownerUsername) {
         return revenueRepository.findByIdAndOwnerUsername(id, ownerUsername)
-                .orElseThrow(() -> new ResourceNotFoundException(REVENUE_NOT_FOUND));
+                .orElseThrow(() -> new ResourceNotFoundException(messages.getMessage("revenue.naoEncontrada")));
     }
 
     private RevenueType requireType(final UUID typeId) {
-        return revenueTypeRepository.findById(typeId).orElseThrow(() -> new ResourceNotFoundException(REVENUE_TYPE_NOT_FOUND));
+        return revenueTypeRepository.findById(typeId).orElseThrow(() -> new ResourceNotFoundException(messages.getMessage("revenueType.naoEncontrado")));
     }
 }

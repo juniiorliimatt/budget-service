@@ -19,7 +19,7 @@ public record SpendingDTO(
     UUID id,
     @NotNull UUID typeId,
     String typeName,
-    @Size(min = 3, max = 250, message = "size must be between 3 and 250") String description,
+    @Size(min = 3, max = 250, message = "{validacao.descricaoTamanho}") String description,
     @NotNull @PositiveOrZero BigDecimal value,
     @NotNull LocalDate date,
     LocalDate referenceDate,
