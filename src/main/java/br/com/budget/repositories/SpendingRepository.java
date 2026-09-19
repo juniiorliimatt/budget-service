@@ -11,4 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface SpendingRepository extends JpaRepository<Spending, UUID>, JpaSpecificationExecutor<Spending> {
 
     Optional<Spending> findByIdAndOwnerUsername(UUID id, String ownerUsername);
+
+    long countByType_Id(UUID typeId);
 }

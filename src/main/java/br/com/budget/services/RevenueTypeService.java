@@ -1,9 +1,11 @@
 package br.com.budget.services;
 
 import br.com.budget.exceptions.DuplicateResourceException;
+import br.com.budget.exceptions.ResourceInUseException;
 import br.com.budget.exceptions.ResourceNotFoundException;
 import br.com.budget.models.dto.RevenueTypeDTO;
 import br.com.budget.models.entities.RevenueType;
+import br.com.budget.repositories.RevenueRepository;
 import br.com.budget.repositories.RevenueTypeRepository;
 import java.util.List;
 import java.util.UUID;
@@ -17,9 +19,11 @@ public class RevenueTypeService {
     private static final String NOT_FOUND = "Revenue type not found";
 
     private final RevenueTypeRepository repository;
+    private final RevenueRepository revenueRepository;
 
-    public RevenueTypeService(final RevenueTypeRepository repository) {
+    public RevenueTypeService(final RevenueTypeRepository repository, final RevenueRepository revenueRepository) {
         this.repository = repository;
+        this.revenueRepository = revenueRepository;
     }
 
     @Transactional(readOnly = true)
@@ -61,9 +65,20 @@ public class RevenueTypeService {
         return RevenueTypeDTO.from(repository.save(entity));
     }
 
+    /**
+     * Checagem explícita em vez de deixar a FK estourar {@code DataIntegrityViolationException}
+     * — dá pra nomear o tipo e quantos lançamentos ainda o referenciam, em vez da
+     * mensagem genérica ("this record is still in use") que serve pra qualquer conflito
+     * de integridade referencial do sistema.
+     */
     @Transactional
     public void delete(final UUID id) {
         final var entity = findEntityById(id);
+        final var usageCount = revenueRepository.countByType_Id(id);
+        if (usageCount > 0) {
+            throw new ResourceInUseException("Cannot delete revenue type '%s': still referenced by %d revenue(s)"
+                    .formatted(entity.getName(), usageCount));
+        }
         repository.delete(entity);
     }
 

@@ -1,6 +1,7 @@
 package br.com.budget.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.opaqueToken;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.com.budget.exceptions.ResourceInUseException;
 import br.com.budget.models.dto.SpendingTypeDTO;
 import br.com.budget.models.dto.SpendingTypeRevisionDTO;
 import br.com.budget.models.enums.SpendingCategory;
@@ -18,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -79,6 +82,19 @@ class SpendingTypeControllerTest {
         mockMvc.perform(delete(API_V1_SPENDING_TYPES + "/" + UUID.randomUUID())
                         .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("delete de tipo ainda referenciado por despesa responde 409 com mensagem específica (regressão: mensagem genérica)")
+    void delete_typeInUse_returnsConflictWithSpecificMessage() throws Exception {
+        final var id = UUID.randomUUID();
+        doThrow(new ResourceInUseException("Cannot delete spending type 'Enel': still referenced by 3 spending(s)"))
+                .when(service).delete(id);
+
+        mockMvc.perform(delete(API_V1_SPENDING_TYPES + "/" + id)
+                        .with(opaqueToken().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Cannot delete spending type 'Enel': still referenced by 3 spending(s)"));
     }
 
     @Test

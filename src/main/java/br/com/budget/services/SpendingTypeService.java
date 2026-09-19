@@ -1,9 +1,11 @@
 package br.com.budget.services;
 
 import br.com.budget.exceptions.DuplicateResourceException;
+import br.com.budget.exceptions.ResourceInUseException;
 import br.com.budget.exceptions.ResourceNotFoundException;
 import br.com.budget.models.dto.SpendingTypeDTO;
 import br.com.budget.models.entities.SpendingType;
+import br.com.budget.repositories.SpendingRepository;
 import br.com.budget.repositories.SpendingTypeRepository;
 import java.util.List;
 import java.util.UUID;
@@ -17,9 +19,11 @@ public class SpendingTypeService {
     private static final String NOT_FOUND = "Spending type not found";
 
     private final SpendingTypeRepository repository;
+    private final SpendingRepository spendingRepository;
 
-    public SpendingTypeService(final SpendingTypeRepository repository) {
+    public SpendingTypeService(final SpendingTypeRepository repository, final SpendingRepository spendingRepository) {
         this.repository = repository;
+        this.spendingRepository = spendingRepository;
     }
 
     @Transactional(readOnly = true)
@@ -52,9 +56,20 @@ public class SpendingTypeService {
         return SpendingTypeDTO.from(repository.save(entity));
     }
 
+    /**
+     * Checagem explícita em vez de deixar a FK estourar {@code DataIntegrityViolationException}
+     * — dá pra nomear o tipo e quantos lançamentos ainda o referenciam, em vez da
+     * mensagem genérica ("this record is still in use") que serve pra qualquer conflito
+     * de integridade referencial do sistema.
+     */
     @Transactional
     public void delete(final UUID id) {
         final var entity = findEntityById(id);
+        final var usageCount = spendingRepository.countByType_Id(id);
+        if (usageCount > 0) {
+            throw new ResourceInUseException("Cannot delete spending type '%s': still referenced by %d spending(s)"
+                    .formatted(entity.getName(), usageCount));
+        }
         repository.delete(entity);
     }
 

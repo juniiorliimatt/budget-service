@@ -1,6 +1,7 @@
 package br.com.budget.exceptions.handler;
 
 import br.com.budget.exceptions.DuplicateResourceException;
+import br.com.budget.exceptions.ResourceInUseException;
 import br.com.budget.exceptions.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -32,6 +33,11 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ProblemDetail handleDuplicate(final DuplicateResourceException exception) {
+        return problem(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(ResourceInUseException.class)
+    public ProblemDetail handleResourceInUse(final ResourceInUseException exception) {
         return problem(HttpStatus.CONFLICT, exception.getMessage());
     }
 

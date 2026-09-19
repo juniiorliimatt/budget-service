@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface RevenueRepository extends JpaRepository<Revenue, UUID>, JpaSpecificationExecutor<Revenue> {
 
     Optional<Revenue> findByIdAndOwnerUsername(UUID id, String ownerUsername);
+
+    long countByType_Id(UUID typeId);
 }
