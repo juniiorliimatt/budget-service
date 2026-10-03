@@ -82,6 +82,11 @@ Rotas (todas `/api/v1`): `revenues`, `spendings`, `revenue-types`, `spending-typ
 - Testes de controller + ITs com Testcontainers: `RealPostgresSchemaIT` e `TotalPorTipoIT`
   (`totalPorTipo` anual/mensal: competência, dono e flags de `RevenueType`). Lógica nova de
   service/cálculo (totais, 50/30/20) deve nascer com teste unitário/IT.
+- `GET /budget-rules/monthly-series?year` devolve os 12 meses (receita + despesas realizadas por
+  categoria 50/30/20) em 2 queries agrupadas; `MonthlySeriesIT` exige os **mesmos números** de
+  `fifty-thirty-twenty` mês a mês (competência, dono, `includeInMonthlyTotals`).
+- Query param obrigatório ausente ou com tipo errado responde **400** (`RestExceptionHandler`), nunca
+  500 — mantenha ao criar handlers.
 - `GET /revenues|spendings/by-type` aceita `month` opcional: sem ele, ano inteiro (receitas
   respeitam `includeInTotals`); com ele, só o mês (receitas respeitam `includeInMonthlyTotals`,
   mesma regra do total mensal).
