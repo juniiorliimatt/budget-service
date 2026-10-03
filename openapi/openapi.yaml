@@ -39,6 +39,27 @@ paths:
           description: OK
       tags:
       - budget-rule-controller
+  /api/v1/budget-rules/monthly-series:
+    get:
+      operationId: monthlySeries
+      parameters:
+      - in: query
+        name: year
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MonthlySeriesPointDTO"
+          description: OK
+      tags:
+      - budget-rule-controller
   /api/v1/budget-rules/monthly-summary:
     get:
       operationId: monthlySummary
@@ -779,6 +800,20 @@ components:
           $ref: "#/components/schemas/BudgetBucketDTO"
         savings:
           $ref: "#/components/schemas/BudgetBucketDTO"
+        totalRevenue:
+          type: number
+    MonthlySeriesPointDTO:
+      type: object
+      properties:
+        essential:
+          type: number
+        month:
+          type: integer
+          format: int32
+        personal:
+          type: number
+        savings:
+          type: number
         totalRevenue:
           type: number
     MonthlySummaryDTO:
