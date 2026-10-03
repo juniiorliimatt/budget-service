@@ -71,6 +71,50 @@ class BudgetRuleControllerTest {
     }
 
     @Test
+    void monthlySeries_withoutAuth_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-series").param("year", "2026"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void monthlySeries_withAuth_returnsTheTwelveMonths() throws Exception {
+        final var series = java.util.stream.IntStream.rangeClosed(1, 12)
+                .mapToObj(m -> new br.com.budget.models.dto.MonthlySeriesPointDTO(m, BigDecimal.valueOf(1000L * m),
+                        BigDecimal.valueOf(100L * m), BigDecimal.valueOf(10L * m), BigDecimal.valueOf(m)))
+                .toList();
+        when(budgetRuleService.serieMensal(2026, OWNER)).thenReturn(series);
+
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-series").param("year", "2026").with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(12))
+                .andExpect(jsonPath("$[0].month").value(1))
+                .andExpect(jsonPath("$[11].totalRevenue").value(12000))
+                .andExpect(jsonPath("$[2].essential").value(300))
+                .andExpect(jsonPath("$[2].personal").value(30))
+                .andExpect(jsonPath("$[2].savings").value(3));
+    }
+
+    @Test
+    void monthlySeries_withoutYear_returnsBadRequestNamingTheParameter() throws Exception {
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-series").with(auth()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("year")));
+    }
+
+    @Test
+    void monthlySeries_withNonNumericYear_returnsBadRequestNamingTheParameter() throws Exception {
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-series").param("year", "dois-mil").with(auth()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("year")));
+    }
+
+    @Test
+    void fiftyThirtyTwenty_withoutMonth_returnsBadRequestInsteadOfServerError() throws Exception {
+        mockMvc.perform(get(API_V1_BUDGET_RULES + "/fifty-thirty-twenty").param("year", "2026").with(auth()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void monthlySummary_withoutAuth_returnsUnauthorized() throws Exception {
         mockMvc.perform(get(API_V1_BUDGET_RULES + "/monthly-summary").param("month", "9").param("year", "2026"))
                 .andExpect(status().isUnauthorized());

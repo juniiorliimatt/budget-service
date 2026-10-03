@@ -1,9 +1,11 @@
 package br.com.budget.controllers;
 
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
+import br.com.budget.models.dto.MonthlySeriesPointDTO;
 import br.com.budget.models.dto.MonthlySummaryDTO;
 import br.com.budget.models.dto.YearlySummaryDTO;
 import br.com.budget.services.BudgetRuleService;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +36,15 @@ public class BudgetRuleController {
     public ResponseEntity<MonthlySummaryDTO> monthlySummary(@RequestParam final int month, @RequestParam final int year,
                                                               final Authentication authentication) {
         return ResponseEntity.ok(budgetRuleService.resumoMensal(month, year, authentication.getName()));
+    }
+
+    /**
+     * Série do ano: 12 pontos (um por mês) com receita e despesas realizadas por categoria
+     * 50/30/20, numa chamada só — mesmos números de {@code fifty-thirty-twenty} mês a mês.
+     */
+    @GetMapping("/monthly-series")
+    public ResponseEntity<List<MonthlySeriesPointDTO>> monthlySeries(@RequestParam final int year, final Authentication authentication) {
+        return ResponseEntity.ok(budgetRuleService.serieMensal(year, authentication.getName()));
     }
 
     /** Total de receitas, despesas e saldo do ano inteiro — base da tela de metas. */

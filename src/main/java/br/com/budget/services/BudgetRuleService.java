@@ -2,6 +2,7 @@ package br.com.budget.services;
 
 import br.com.budget.models.dto.BudgetBucketDTO;
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
+import br.com.budget.models.dto.MonthlySeriesPointDTO;
 import br.com.budget.models.dto.MonthlySummaryDTO;
 import br.com.budget.models.dto.YearlySummaryDTO;
 import br.com.budget.models.entities.Spending;
@@ -9,6 +10,8 @@ import br.com.budget.models.enums.SpendingCategory;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,6 +98,58 @@ public class BudgetRuleService {
         final var totalRevenue = revenueService.total(null, year, null, ownerUsername).getTotal();
         final var totalSpending = spendingService.total(null, year, null, ownerUsername).getTotal();
         return new YearlySummaryDTO(totalRevenue, totalSpending, totalRevenue.subtract(totalSpending));
+    }
+
+    /**
+     * Série do ano (12 pontos, sempre todos os meses, zeros onde não há lançamento) em duas
+     * queries agrupadas — substitui 12 chamadas de {@link #cinquentaTrintaVinte}. Mesmas regras
+     * dele: competência ({@code referenceDate}), dono e {@code includeInMonthlyTotals} nas receitas.
+     */
+    @Transactional(readOnly = true)
+    public List<MonthlySeriesPointDTO> serieMensal(final int year, final String ownerUsername) {
+        final var from = LocalDate.of(year, 1, 1);
+        final var to = from.plusYears(1);
+
+        final BigDecimal[] revenue = zeros();
+        final List<Object[]> revenueRows = entityManager.createQuery(
+                        "select extract(month from r.referenceDate), sum(r.value) from Revenue r "
+                                + "where r.ownerUsername = :owner and r.referenceDate >= :from and r.referenceDate < :to "
+                                + "and r.type.includeInMonthlyTotals = true "
+                                + "group by extract(month from r.referenceDate)", Object[].class)
+                .setParameter("owner", ownerUsername).setParameter("from", from).setParameter("to", to)
+                .getResultList();
+        for (final Object[] row : revenueRows) {
+            revenue[((Number) row[0]).intValue() - 1] = (BigDecimal) row[1];
+        }
+
+        final var byCategory = new java.util.EnumMap<SpendingCategory, BigDecimal[]>(SpendingCategory.class);
+        for (final SpendingCategory category : SpendingCategory.values()) {
+            byCategory.put(category, zeros());
+        }
+        final List<Object[]> spendingRows = entityManager.createQuery(
+                        "select extract(month from s.referenceDate), s.type.category, sum(s.value) from Spending s "
+                                + "where s.ownerUsername = :owner and s.referenceDate >= :from and s.referenceDate < :to "
+                                + "group by extract(month from s.referenceDate), s.type.category", Object[].class)
+                .setParameter("owner", ownerUsername).setParameter("from", from).setParameter("to", to)
+                .getResultList();
+        for (final Object[] row : spendingRows) {
+            byCategory.get((SpendingCategory) row[1])[((Number) row[0]).intValue() - 1] = (BigDecimal) row[2];
+        }
+
+        final List<MonthlySeriesPointDTO> series = new ArrayList<>(12);
+        for (int i = 0; i < 12; i++) {
+            series.add(new MonthlySeriesPointDTO(i + 1, revenue[i],
+                    byCategory.get(SpendingCategory.ESSENTIAL)[i],
+                    byCategory.get(SpendingCategory.PERSONAL)[i],
+                    byCategory.get(SpendingCategory.SAVINGS)[i]));
+        }
+        return series;
+    }
+
+    private static BigDecimal[] zeros() {
+        final BigDecimal[] values = new BigDecimal[12];
+        java.util.Arrays.fill(values, BigDecimal.ZERO);
+        return values;
     }
 
     private BigDecimal sumByPaidStatus(final int month, final int year, final String ownerUsername, final boolean wasPaid) {

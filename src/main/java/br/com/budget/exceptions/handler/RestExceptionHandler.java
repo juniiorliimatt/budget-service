@@ -13,7 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
@@ -79,6 +81,18 @@ public class RestExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleMessageNotReadable(final HttpMessageNotReadableException exception) {
         return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.jsonMalFormado"));
+    }
+
+    /** Query param obrigatório ausente (ex.: {@code year}) é erro do client — sem este handler caía no catch-all (500). */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ProblemDetail handleMissingParameter(final MissingServletRequestParameterException exception) {
+        return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.parametroObrigatorio", new Object[]{exception.getParameterName()}));
+    }
+
+    /** Query/path param com tipo errado (ex.: {@code year=abc}, UUID inválido) também é 400. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(final MethodArgumentTypeMismatchException exception) {
+        return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.parametroInvalido", new Object[]{exception.getName()}));
     }
 
     @ExceptionHandler(Exception.class)
