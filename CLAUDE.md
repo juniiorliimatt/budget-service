@@ -79,8 +79,12 @@ Rotas (todas `/api/v1`): `revenues`, `spendings`, `revenue-types`, `spending-typ
   JPA e Liquibase que o H2 `create-drop` não reproduz.
 - Cucumber está nas dependências (mesma versão do `workbox-api`) mas **ainda não há
   `.feature`/steps** — ao criar, seguir o padrão do `workbox-api` (feature primeiro).
-- Só há testes de controller hoje; lógica nova de service/cálculo (totais, 50/30/20) deve
-  nascer com teste unitário/IT.
+- Testes de controller + ITs com Testcontainers: `RealPostgresSchemaIT` e `TotalPorTipoIT`
+  (`totalPorTipo` anual/mensal: competência, dono e flags de `RevenueType`). Lógica nova de
+  service/cálculo (totais, 50/30/20) deve nascer com teste unitário/IT.
+- `GET /revenues|spendings/by-type` aceita `month` opcional: sem ele, ano inteiro (receitas
+  respeitam `includeInTotals`); com ele, só o mês (receitas respeitam `includeInMonthlyTotals`,
+  mesma regra do total mensal).
 
 ## Contrato (OpenAPI)
 `openapi/openapi.yaml` é a fonte da verdade e o front consome só dele. Mudou rota/DTO/

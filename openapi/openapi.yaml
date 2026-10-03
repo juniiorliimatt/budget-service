@@ -295,6 +295,12 @@ paths:
         schema:
           type: integer
           format: int32
+      - in: query
+        name: month
+        required: false
+        schema:
+          type: integer
+          format: int32
       responses:
         "200":
           content:
@@ -624,6 +630,12 @@ paths:
       - in: query
         name: year
         required: true
+        schema:
+          type: integer
+          format: int32
+      - in: query
+        name: month
+        required: false
         schema:
           type: integer
           format: int32
