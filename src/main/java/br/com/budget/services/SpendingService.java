@@ -170,16 +170,16 @@ public class SpendingService {
     return predicates;
   }
 
-  /** Soma agrupada por tipo no ano inteiro (competência) — base da tela de metas. */
+  /** Soma agrupada por tipo (competência) no ano inteiro ou, com {@code month}, só naquele mês — base da tela de metas. */
   @Transactional(readOnly = true)
-  public List<TypeTotalDTO> totalPorTipo(final int year, final String ownerUsername) {
+  public List<TypeTotalDTO> totalPorTipo(final Integer month, final int year, final String ownerUsername) {
     final var cb = entityManager.getCriteriaBuilder();
     final var query = cb.createQuery(Object[].class);
     final var root = query.from(Spending.class);
     final var type = root.join("type");
 
-    final var from = LocalDate.of(year, 1, 1);
-    final var to = from.plusYears(1);
+    final var from = month == null ? LocalDate.of(year, 1, 1) : LocalDate.of(year, month, 1);
+    final var to = month == null ? from.plusYears(1) : from.plusMonths(1);
     final var total = cb.sum(root.get("value"));
 
     query.multiselect(type.get("id"), type.get("name"), total)

@@ -78,10 +78,16 @@ public class RevenueController {
         return ResponseEntity.ok(revenueService.total(month, year, typeId, authentication.getName()));
     }
 
-    /** Soma agrupada por tipo no ano inteiro (ex.: total de "Salário" em 2026) — tela de metas. */
+    /**
+     * Soma agrupada por tipo no ano inteiro (ex.: total de "Salário" em 2026) ou, com {@code month}, só naquele
+     * mês — tela de metas. O filtro por flag segue o total correspondente (anual: {@code includeInTotals};
+     * mensal: {@code includeInMonthlyTotals}).
+     */
     @GetMapping("/by-type")
-    public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year, final Authentication authentication) {
-        return ResponseEntity.ok(revenueService.totalPorTipo(year, authentication.getName()));
+    public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year,
+                                                          @RequestParam(required = false) final Integer month,
+                                                          final Authentication authentication) {
+        return ResponseEntity.ok(revenueService.totalPorTipo(month, year, authentication.getName()));
     }
 
     @PostMapping

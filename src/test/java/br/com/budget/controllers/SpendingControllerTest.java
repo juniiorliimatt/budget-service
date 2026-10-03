@@ -228,9 +228,19 @@ class SpendingControllerTest {
     }
 
     @Test
+    void totalByType_withMonth_passesMonthToTheService() throws Exception {
+        final var typeId = UUID.randomUUID();
+        when(spendingService.totalPorTipo(3, 2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Condomínio", BigDecimal.valueOf(800))));
+
+        mockMvc.perform(get(API_V1_SPENDINGS + "/by-type").param("year", "2026").param("month", "3").with(auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].total").value(800));
+    }
+
+    @Test
     void totalByType_withAuth_returnsGroupedTotals() throws Exception {
         final var typeId = UUID.randomUUID();
-        when(spendingService.totalPorTipo(2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Condomínio", BigDecimal.valueOf(9600))));
+        when(spendingService.totalPorTipo(null, 2026, OWNER)).thenReturn(List.of(new TypeTotalDTO(typeId, "Condomínio", BigDecimal.valueOf(9600))));
 
         mockMvc.perform(get(API_V1_SPENDINGS + "/by-type").param("year", "2026").with(auth()))
                 .andExpect(status().isOk())

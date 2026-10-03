@@ -78,10 +78,12 @@ public class SpendingController {
     return ResponseEntity.ok(spendingService.total(month, year, typeId, authentication.getName()));
   }
 
-  /** Soma agrupada por tipo no ano inteiro (ex.: total de "Condomínio" em 2026) — tela de metas. */
+  /** Soma agrupada por tipo no ano inteiro (ex.: "Condomínio" em 2026) ou, com {@code month}, só naquele mês — tela de metas. */
   @GetMapping("/by-type")
-  public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year, final Authentication authentication) {
-    return ResponseEntity.ok(spendingService.totalPorTipo(year, authentication.getName()));
+  public ResponseEntity<List<TypeTotalDTO>> totalByType(@RequestParam final int year,
+                                                        @RequestParam(required = false) final Integer month,
+                                                        final Authentication authentication) {
+    return ResponseEntity.ok(spendingService.totalPorTipo(month, year, authentication.getName()));
   }
 
   @PostMapping

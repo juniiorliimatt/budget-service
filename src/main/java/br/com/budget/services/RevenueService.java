@@ -187,19 +187,20 @@ public class RevenueService {
 
     /** Soma agrupada por tipo no ano inteiro (competência) — base da tela de metas. */
     @Transactional(readOnly = true)
-    public List<TypeTotalDTO> totalPorTipo(final int year, final String ownerUsername) {
+    public List<TypeTotalDTO> totalPorTipo(final Integer month, final int year, final String ownerUsername) {
         final var cb = entityManager.getCriteriaBuilder();
         final var query = cb.createQuery(Object[].class);
         final var root = query.from(Revenue.class);
         final var type = root.join("type");
 
-        final var from = LocalDate.of(year, 1, 1);
-        final var to = from.plusYears(1);
+        final var from = month == null ? LocalDate.of(year, 1, 1) : LocalDate.of(year, month, 1);
+        final var to = month == null ? from.plusYears(1) : from.plusMonths(1);
+        final var flag = month == null ? "includeInTotals" : "includeInMonthlyTotals";
         final var total = cb.sum(root.get("value"));
 
         query.multiselect(type.get("id"), type.get("name"), total)
                 .where(cb.equal(root.get("ownerUsername"), ownerUsername),
-                        cb.isTrue(type.get("includeInTotals")),
+                        cb.isTrue(type.get(flag)),
                         cb.greaterThanOrEqualTo(root.get("referenceDate"), from),
                         cb.lessThan(root.get("referenceDate"), to))
                 .groupBy(type.get("id"), type.get("name"))
