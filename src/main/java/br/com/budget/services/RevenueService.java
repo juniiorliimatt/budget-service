@@ -1,5 +1,8 @@
 package br.com.budget.services;
 
+import br.com.budget.config.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import br.com.budget.exceptions.ResourceNotFoundException;
 import br.com.budget.models.dto.RevenueAnnualBatchRequestDTO;
 import br.com.budget.models.dto.RevenueDTO;
@@ -67,6 +70,7 @@ public class RevenueService {
         return RevenueDTO.from(findEntityById(id, ownerUsername));
     }
 
+    @CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true)
     @Transactional
     public RevenueDTO save(final RevenueDTO dto, final String ownerUsername) {
         final var revenue = Revenue.builder()
@@ -79,6 +83,7 @@ public class RevenueService {
         return RevenueDTO.from(revenueRepository.save(revenue));
     }
 
+    @CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true)
     @Transactional
     public RevenueDTO update(final UUID id, final RevenueDTO dto, final String ownerUsername) {
         final var revenue = findEntityById(id, ownerUsername);
@@ -95,6 +100,7 @@ public class RevenueService {
      * direta (mesma instância), não passa pelo proxy do Spring, então quem garante a
      * atomicidade é a transação desta própria chamada, não a de {@code save}.
      */
+    @CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true)
     @Transactional
     public List<RevenueDTO> saveAll(final List<RevenueDTO> dtos, final String ownerUsername) {
         return dtos.stream().map(dto -> save(dto, ownerUsername)).toList();
@@ -108,6 +114,7 @@ public class RevenueService {
      * {@link #saveAll} pra manter a mesma atomicidade e validação de tipo do lote
      * genérico.
      */
+    @CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true)
     @Transactional
     public List<RevenueDTO> salvarAnual(final RevenueAnnualBatchRequestDTO request, final String ownerUsername) {
         final var months = request.months() == null || request.months().isEmpty() ? ALL_MONTHS : request.months();
@@ -129,6 +136,7 @@ public class RevenueService {
         return dto.referenceDate() != null ? dto.referenceDate() : dto.date();
     }
 
+    @CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true)
     @Transactional
     public void delete(final UUID id, final String ownerUsername) {
         revenueRepository.delete(findEntityById(id, ownerUsername));
@@ -148,6 +156,7 @@ public class RevenueService {
      *   janeiro pra fechar o ano, que não é receita nova daquele mês).</li>
      * </ul>
      */
+    @Cacheable(cacheNames = CacheNames.AGREGADOS)
     @Transactional(readOnly = true)
     public TotalDTO total(final Integer month, final Integer year, final UUID typeId, final String ownerUsername) {
         final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -186,6 +195,7 @@ public class RevenueService {
     }
 
     /** Soma agrupada por tipo no ano inteiro (competência) — base da tela de metas. */
+    @Cacheable(cacheNames = CacheNames.AGREGADOS)
     @Transactional(readOnly = true)
     public List<TypeTotalDTO> totalPorTipo(final Integer month, final int year, final String ownerUsername) {
         final var cb = entityManager.getCriteriaBuilder();

@@ -1,5 +1,9 @@
 package br.com.budget.services;
 
+import br.com.budget.config.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import br.com.budget.exceptions.DuplicateResourceException;
 import br.com.budget.exceptions.ResourceInUseException;
 import br.com.budget.exceptions.ResourceNotFoundException;
@@ -29,6 +33,7 @@ public class SpendingTypeService {
         this.messages = messages;
     }
 
+    @Cacheable(cacheNames = CacheNames.TIPOS)
     @Transactional(readOnly = true)
     public List<SpendingTypeDTO> findAll() {
         return repository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream().map(SpendingTypeDTO::from).toList();
@@ -39,6 +44,8 @@ public class SpendingTypeService {
         return SpendingTypeDTO.from(findEntityById(id));
     }
 
+    @Caching(evict = {@CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true),
+                @CacheEvict(cacheNames = CacheNames.TIPOS, allEntries = true)})
     @Transactional
     public SpendingTypeDTO save(final SpendingTypeDTO dto) {
         if (repository.existsByNameIgnoreCase(dto.name())) {
@@ -48,6 +55,8 @@ public class SpendingTypeService {
         return SpendingTypeDTO.from(saved);
     }
 
+    @Caching(evict = {@CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true),
+                @CacheEvict(cacheNames = CacheNames.TIPOS, allEntries = true)})
     @Transactional
     public SpendingTypeDTO update(final UUID id, final SpendingTypeDTO dto) {
         final var entity = findEntityById(id);
@@ -65,6 +74,8 @@ public class SpendingTypeService {
      * mensagem genérica ("this record is still in use") que serve pra qualquer conflito
      * de integridade referencial do sistema.
      */
+    @Caching(evict = {@CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true),
+                @CacheEvict(cacheNames = CacheNames.TIPOS, allEntries = true)})
     @Transactional
     public void delete(final UUID id) {
         final var entity = findEntityById(id);

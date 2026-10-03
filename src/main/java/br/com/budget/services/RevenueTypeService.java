@@ -1,5 +1,9 @@
 package br.com.budget.services;
 
+import br.com.budget.config.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import br.com.budget.exceptions.DuplicateResourceException;
 import br.com.budget.exceptions.ResourceInUseException;
 import br.com.budget.exceptions.ResourceNotFoundException;
@@ -29,6 +33,7 @@ public class RevenueTypeService {
         this.messages = messages;
     }
 
+    @Cacheable(cacheNames = CacheNames.TIPOS)
     @Transactional(readOnly = true)
     public List<RevenueTypeDTO> findAll() {
         return repository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream().map(RevenueTypeDTO::from).toList();
@@ -40,6 +45,8 @@ public class RevenueTypeService {
     }
 
     /** {@code includeInTotals}/{@code includeInMonthlyTotals} omitidos no insert assumem {@code true} (ver {@link RevenueTypeDTO}). */
+    @Caching(evict = {@CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true),
+                @CacheEvict(cacheNames = CacheNames.TIPOS, allEntries = true)})
     @Transactional
     public RevenueTypeDTO save(final RevenueTypeDTO dto) {
         if (repository.existsByNameIgnoreCase(dto.name())) {
@@ -52,6 +59,8 @@ public class RevenueTypeService {
         return RevenueTypeDTO.from(saved);
     }
 
+    @Caching(evict = {@CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true),
+                @CacheEvict(cacheNames = CacheNames.TIPOS, allEntries = true)})
     @Transactional
     public RevenueTypeDTO update(final UUID id, final RevenueTypeDTO dto) {
         final var entity = findEntityById(id);
@@ -75,6 +84,8 @@ public class RevenueTypeService {
      * mensagem genérica ("this record is still in use") que serve pra qualquer conflito
      * de integridade referencial do sistema.
      */
+    @Caching(evict = {@CacheEvict(cacheNames = CacheNames.AGREGADOS, allEntries = true),
+                @CacheEvict(cacheNames = CacheNames.TIPOS, allEntries = true)})
     @Transactional
     public void delete(final UUID id) {
         final var entity = findEntityById(id);

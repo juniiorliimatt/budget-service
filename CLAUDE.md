@@ -85,6 +85,14 @@ Rotas (todas `/api/v1`): `revenues`, `spendings`, `revenue-types`, `spending-typ
 - `GET /budget-rules/monthly-series?year` devolve os 12 meses (receita + despesas realizadas por
   categoria 50/30/20) em 2 queries agrupadas; `MonthlySeriesIT` exige os **mesmos números** de
   `fifty-thirty-twenty` mês a mês (competência, dono, `includeInMonthlyTotals`).
+- **Cache (Spring + Caffeine)**: leituras agregadas (`total`, `totalPorTipo`, regra 50/30/20, resumos,
+  série) em `budget-aggregates` e catálogos de tipos em `budget-types` (`spring.cache.caffeine.spec`:
+  2000 entradas, TTL 10 min). **Toda escrita** de receita, despesa ou tipo (`save/update/saveAll/
+  salvarAnual/delete`) faz `@CacheEvict(allEntries = true)` — método novo que escreve **precisa** da
+  anotação, senão a leitura fica velha. Chave = classe + método + parâmetros (`BudgetKeyGenerator`;
+  o dono é parâmetro, isola usuários). `@EnableCaching(order = LOWEST_PRECEDENCE - 1)` põe o cache
+  por fora da transação (evict após commit). Cache local à instância: com réplicas, usar Redis.
+  `CacheBehaviorIT` conta queries (estatísticas do Hibernate) e testa a invalidação.
 - Query param obrigatório ausente ou com tipo errado responde **400** (`RestExceptionHandler`), nunca
   500 — mantenha ao criar handlers.
 - `GET /revenues|spendings/by-type` aceita `month` opcional: sem ele, ano inteiro (receitas

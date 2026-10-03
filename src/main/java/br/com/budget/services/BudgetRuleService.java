@@ -1,5 +1,7 @@
 package br.com.budget.services;
 
+import br.com.budget.config.CacheNames;
+import org.springframework.cache.annotation.Cacheable;
 import br.com.budget.models.dto.BudgetBucketDTO;
 import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
 import br.com.budget.models.dto.MonthlySeriesPointDTO;
@@ -39,6 +41,7 @@ public class BudgetRuleService {
         this.entityManager = entityManager;
     }
 
+    @Cacheable(cacheNames = CacheNames.AGREGADOS)
     @Transactional(readOnly = true)
     public FiftyThirtyTwentyDTO cinquentaTrintaVinte(final int month, final int year, final String ownerUsername) {
         final var totalRevenue = revenueService.total(month, year, null, ownerUsername).getTotal();
@@ -81,6 +84,7 @@ public class BudgetRuleService {
      * {@code projectedBalance = totalRevenue - totalSpending} — previsão de saldo do
      * mês assumindo que toda despesa em aberto será quitada dentro do próprio mês.
      */
+    @Cacheable(cacheNames = CacheNames.AGREGADOS)
     @Transactional(readOnly = true)
     public MonthlySummaryDTO resumoMensal(final int month, final int year, final String ownerUsername) {
         final var totalRevenue = revenueService.total(month, year, null, ownerUsername).getTotal();
@@ -93,6 +97,7 @@ public class BudgetRuleService {
     }
 
     /** Resumo do ano inteiro (competência) — base da tela de metas. */
+    @Cacheable(cacheNames = CacheNames.AGREGADOS)
     @Transactional(readOnly = true)
     public YearlySummaryDTO resumoAnual(final int year, final String ownerUsername) {
         final var totalRevenue = revenueService.total(null, year, null, ownerUsername).getTotal();
@@ -105,6 +110,7 @@ public class BudgetRuleService {
      * queries agrupadas — substitui 12 chamadas de {@link #cinquentaTrintaVinte}. Mesmas regras
      * dele: competência ({@code referenceDate}), dono e {@code includeInMonthlyTotals} nas receitas.
      */
+    @Cacheable(cacheNames = CacheNames.AGREGADOS)
     @Transactional(readOnly = true)
     public List<MonthlySeriesPointDTO> serieMensal(final int year, final String ownerUsername) {
         final var from = LocalDate.of(year, 1, 1);
