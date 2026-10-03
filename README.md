@@ -93,7 +93,7 @@ raiz](../README.md#rodando-localmente)) na porta **7050**, não 5432 — passe
 `DATABASE_URL=jdbc:postgresql://localhost:7050/workbox`. Banco único (`workbox`)
 compartilhado com o `workbox-api` — este serviço só enxerga o schema `budget`, via o
 role `budget_service` (default de `POSTGRES_USER`/`POSTGRES_PASSWORD`), sem acesso ao
-schema `api` do outro serviço.
+schema `workbox` do outro serviço.
 
 CORS: `cors.allowed-origins` (default `http://localhost:7053,http://127.0.0.1:7053`,
 mesma origem do `workbox-app` em dev) via Spring Security nativo — não um `Filter`
@@ -115,7 +115,7 @@ A task sobe a aplicação no profile `test`, baixa `/v3/api-docs.yaml` e grava e
 determinística (sem isso, a ordem dos campos do schema varia entre execuções e o CI
 acusa diff falso).
 
-Ver também: [AGENTS.md](../AGENTS.md).
+Ver também: [CLAUDE.md](../CLAUDE.md).
 
 ## Convenção de commits
 
@@ -127,7 +127,7 @@ Sempre em português (pt-BR), Conventional Commits com o prefixo de tipo em ingl
 
 Tipos aceitos: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`, `style`, `perf`, `ci`,
 `revert`. Vale pros quatro repositórios do monorepo — regra completa e exemplo em
-[AGENTS.md](../AGENTS.md#convenção-de-mensagens-de-commit).
+[CLAUDE.md](../CLAUDE.md#convenção-de-mensagens-de-commit).
 
 ## Testes
 
