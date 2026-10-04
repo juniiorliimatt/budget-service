@@ -58,6 +58,11 @@ Rotas (todas `/api/v1`): `revenues`, `spendings`, `revenue-types`, `spending-typ
   precisam bater com uma linha ativa em `workbox.api_clients`). A claim `roles` já vem
   `ROLE_*` e vira authority sem prefixo adicional. Nunca decodificar JWT localmente nem
   conhecer `JWT_SECRET`. Referência: [`docs/budget-service-migracao-introspeccao.md`](../docs/budget-service-migracao-introspeccao.md).
+- **Acesso por módulo**: a introspecção devolve `modules` (ADMIN: todos) e o introspector
+  os transforma em authorities `MODULE_<CODIGO>`. `SecurityConfig` exige `MODULE_FINANCAS`
+  em tudo que não é health/Swagger — autenticado sem o módulo = **403**. Os testes de
+  controller usam a segurança padrão do slice (só `ROLE_USER`); a regra real é coberta
+  por `ModuleAccessSecurityTest`.
 - **CORS**: `cors.allowed-origins` (default `http://localhost:7053`) via Spring Security
   nativo; origem específica ecoada (nunca `*`) com credenciais.
 - **Liquibase**: `includeAll` em `db/changelog/v0.0.1/create` e `v0.0.2/create`; arquivo
