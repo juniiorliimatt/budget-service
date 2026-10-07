@@ -11,12 +11,16 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Corpo de erro padronizado em RFC 7807 ({@link ProblemDetail}) — mesmo padrão do
@@ -93,6 +97,26 @@ public class RestExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ProblemDetail handleTypeMismatch(final MethodArgumentTypeMismatchException exception) {
         return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.parametroInvalido", new Object[]{exception.getName()}));
+    }
+
+    /** Rota inexistente é erro do client; sem este handler o catch-all abaixo a transformava em 500. */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResource(final NoResourceFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, messages.getMessage("erro.rotaNaoEncontrada"));
+    }
+
+    /** Método HTTP errado para a rota é erro do client (405, com {@code Allow}); sem este handler virava 500. */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> handleMethodNotSupported(final HttpRequestMethodNotSupportedException exception) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).headers(exception.getHeaders())
+                .body(problem(HttpStatus.METHOD_NOT_ALLOWED, messages.getMessage("erro.metodoNaoSuportado")));
+    }
+
+    /** {@code Content-Type} que a rota não consome é erro do client (415); sem este handler virava 500. */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> handleMediaTypeNotSupported(final HttpMediaTypeNotSupportedException exception) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).headers(exception.getHeaders())
+                .body(problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, messages.getMessage("erro.tipoMidiaNaoSuportado")));
     }
 
     @ExceptionHandler(Exception.class)
