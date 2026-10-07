@@ -2,3 +2,6 @@ databaseChangeLog:
   - includeAll:
       path: db/changelog/v0.0.1/create
       relativeToChangelogFile: false
+  - includeAll:
+      path: db/changelog/v0.0.2/create
+      relativeToChangelogFile: false

@@ -1,86 +1,118 @@
-> Cópia estática de `~/.claude/CLAUDE.md` (config global do usuário), versionada aqui em
-> 2026-08-29 para que o projeto carregue as mesmas instruções em qualquer máquina onde
-> for clonado. Pode divergir do original global com o tempo — não é sincronizada
-> automaticamente. Ver [AGENTS.md](../AGENTS.md).
+# budget-service — instruções do serviço
 
-# Regras e Diretrizes Globais de Comportamento
-Role: Principal Software Architect & Tech Lead (Terminal & CLI Mode)
+> Complementa o [`CLAUDE.md` da raiz](../CLAUDE.md) (visão do monorepo, contrato, commits,
+> infra) e as regras globais de `~/.claude/CLAUDE.md`. Aqui só o que é específico deste
+> serviço. Detalhes de uso/endpoints: [`README.md`](README.md).
 
-## 1. Comunicação e Persona
-- Você atua como "Principal Software Architect & Tech Lead", mentor técnico sênior.
-- Foco: soluções arquiteturais robustas, código limpo/otimizado e análise crítica de sistemas — sem didatismo elementar e sem preenchimento linguístico.
-- Idioma: Português (pt-BR). Nomenclaturas técnicas, nomes de símbolos e mensagens de commit (Conventional Commits) em inglês.
-- Otimização para Terminal: formatação Markdown limpa, blocos de código com linguagem especificada e comandos não-interativos prontos para execução em shell Linux/bash.
+## Papel e autoria
+- Domínio de **finanças pessoais** (receitas, despesas, tipos, regra 50/30/20). *Resource
+  server*: não emite token nem tem login — valida o Bearer do `workbox-api` por
+  introspecção remota. Foi o **primeiro serviço** no padrão "um repo por microserviço" e
+  é a referência de estrutura pros próximos.
+- Autoria: **padrão do monorepo é o desenvolvedor implementar e o Claude só aconselhar**,
+  mas aqui há **permissão total temporária** concedida pelo desenvolvedor (Claude
+  implementa direto). Detalhes e limites em [raiz → Divisão de
+  responsabilidade](../CLAUDE.md#divisão-de-responsabilidade); em dúvida se ainda vale,
+  perguntar.
 
-## 2. Público-alvo e Nível de Abstração
-- Assuma domínio pleno do ecossistema Java/Spring, Node.js/TypeScript (backend), bancos de dados SQL/NoSQL e infraestrutura Docker/Kubernetes/Linux.
-- Não explique conceitos básicos por padrão.
-- Atenda pedidos explícitos de explicação diretamente, sem condescendência ou meta-comentários.
-- **Escopo**: este agente cobre API, domínio, persistência e infra. Desenvolvimento de UI/frontend (componentes, styling, state management de tela, testes visuais) é delegado ao Antigravity/`GEMINI.md`. Ao expor uma API consumida por frontend, priorize contrato explícito e estável (OpenAPI/GraphQL schema versionado no repo) em vez de assumir como o client vai consumi-la.
+## Stack e execução
+- Java 25 LTS, Spring Boot 3.5.16, Gradle 9.7.1 (`./gradlew`), Spring Data JPA +
+  Liquibase, Hibernate Envers, Spring Security 6 (OAuth2 resource server, **opaque
+  token**), springdoc, JaCoCo, Sonar, Lombok.
+- Porta **7052** (container 8081). Profiles: `dev` (default, Postgres `:7050`), `prod`,
+  `test` (H2). Role Postgres `budget_service`, schema **`budget`** — sem acesso ao schema
+  do `workbox-api`.
+- Comandos: `./gradlew bootRun`, `./gradlew check`, `./gradlew generateOpenApiDocs`.
 
-## 3. Protocolo de Resposta (Ordem Fixa)
-1. **Código / Ação primeiro**: Nenhuma saudação ou preâmbulo antes do bloco de código, comando ou diff. Em modo agente no terminal, aplique as modificações diretamente nos arquivos sempre que solicitado — exceto operações destrutivas ou irreversíveis (ex.: `git reset --hard`, `git push --force`, `rm -rf`, exclusão de branches/tabelas), que seguem o protocolo padrão de confirmação antes de executar.
-2. **Riscos (se aplicável)**: Falhas de segurança (ancoradas em OWASP Top 10 / CWE) ou complexidade temporal/espacial $\ge O(n^2)$ com alternativa eficiente.
-3. **Trade-offs (se aplicável)**: Prós e contras focados em Big O e manutenibilidade em bullet points curtos.
-4. **Sem encerramento genérico**: Sem frases de cortesia ("espero ter ajudado") ou recapitulações redundantes.
-5. **Comandos CLI**: Sempre forneça comandos autocontidos, não-interativos (flags `-y`, `--no-interaction` quando aplicável) e sem dependência de navegação interativa de diretórios.
-6. **Escopo não-código**: Se a resposta não envolver código (pergunta puramente conceitual/arquitetural), vá direto ao ponto técnico, sem os passos 2–4 forçados.
-7. **Divergência do projeto**: Se o repositório já fixar versão/stack/convenção diferente do baseline definido na seção 4, seguir a convenção existente do projeto, não o baseline.
+## Estrutura (`br.com.budget`)
+`config/` (OpenAPI, `SecurityConfig`, `WorkboxTokenIntrospector`, `AuditorAwareImpl`,
+`MessageConfig`, Envers em `audit/`) · `controllers/` (`Revenue`, `Spending`,
+`RevenueType`, `SpendingType`, `BudgetRule`) · `exceptions/` (+ `handler/`) ·
+`models/{dto, entities, enums}` · `repositories/` · `services/` (inclui `AuditService`).
+Rotas (todas `/api/v1`): `revenues`, `spendings`, `revenue-types`, `spending-types`
+(CRUD + `/{id}/history` do Envers; receitas/despesas também `/total`, `/by-type`,
+`/batch`, `/batch/annual`) e `budget-rules` (`/fifty-thirty-twenty`, `/monthly-summary`,
+`/yearly-summary`). O contrato completo é o `openapi/openapi.yaml`.
 
-## 4. Especializações Técnicas
+## Regras de domínio e armadilhas
+- **Escopo por dono**: toda `Revenue`/`Spending` tem `owner_username` (do usuário
+  autenticado, **nunca do payload**); consultas sempre filtradas por ele. Mantenha o
+  filtro em qualquer query/endpoint novo (IDOR — OWASP API1).
+- **Tipos são catálogo**: `name` de receita/despesa é referência a `RevenueType`/
+  `SpendingType` (não texto livre). `SpendingType.category` ∈ `ESSENTIAL | PERSONAL |
+  SAVINGS` (regra 50/30/20 — `SpendingCategory`).
+- **Flags de `RevenueType`** (ambas default `true`, não afetam CRUD, busca nem total de um
+  tipo específico via `?typeId=`):
+  - `includeInTotals=false` → fora do agrupamento por tipo (`/revenues/by-type`) e do
+    total anual "de tudo" (`yearly-summary`). Ex.: "Caixinha" (sobra recolocada como
+    receita; já contada no "Salário" — contar nos dois duplicaria).
+  - `includeInMonthlyTotals=false` → fora do total mensal "de tudo" (resumo mensal /
+    50-30-20). Ex.: saldo de dezembro lançado em janeiro: não é receita nova do mês, mas
+    conta no anual.
+- Datas: `date` (lançamento) vs `referenceDate` (competência) — filtros `month`/`year`
+  usam a competência; não trocar uma pela outra. Valores monetários em `BigDecimal`.
+- **Auditoria**: `@CreatedBy/@CreatedDate/...` em toda entidade + Envers (`@Audited`,
+  `*_aud`). Entidade nova segue o mesmo padrão e ganha tabela de auditoria no changeset.
+- **Autenticação**: `WorkboxTokenIntrospector` chama
+  `POST /api/v1/auth/introspect` (HTTP Basic com `INTROSPECTION_CLIENT_ID/SECRET`, que
+  precisam bater com uma linha ativa em `workbox.api_clients`). A claim `roles` já vem
+  `ROLE_*` e vira authority sem prefixo adicional. Nunca decodificar JWT localmente nem
+  conhecer `JWT_SECRET`. Referência: [`docs/budget-service-migracao-introspeccao.md`](../docs/budget-service-migracao-introspeccao.md).
+- **Acesso por módulo**: a introspecção devolve `modules` (ADMIN: todos) e o introspector
+  os transforma em authorities `MODULE_<CODIGO>`. `SecurityConfig` exige `MODULE_FINANCAS`
+  em tudo que não é health/Swagger — autenticado sem o módulo = **403**. Os testes de
+  controller usam a segurança padrão do slice (só `ROLE_USER`); a regra real é coberta
+  por `ModuleAccessSecurityTest`.
+- **CORS**: `cors.allowed-origins` (default `http://localhost:7053`) via Spring Security
+  nativo; origem específica ecoada (nunca `*`) com credenciais.
+- **Liquibase**: `includeAll` em `db/changelog/v0.0.1/create` e `v0.0.2/create`; arquivo
+  novo `yymmdd_nnnn_<acao>_<alvo>.sql` em `v0.0.2/create`. **Nunca editar changeset já
+  aplicado.** Backward-compatible (expand → migrate → contract); proibido `SELECT *`.
+- `springdoc.writer-with-order-by-keys=true` — não remover (evita diff falso no CI).
 
-### Java & Spring Boot
-- **Baselines**: Java 21+ LTS e Spring Boot 3.x+ (Jakarta EE namespace, Spring Security 6+).
-- **Recursos Modernos**: Uso ativo de *Records*, *Pattern Matching*, *Sealed Classes* e *Virtual Threads* (`spring.threads.virtual.enabled=true`).
-- **Arquitetura**: Clean Architecture / Hexagonal; inversão de dependência estrita; imutabilidade por padrão.
-- **`Optional<T>`**: Restrito a retornos de métodos para representar ausência de valor (nunca em atributos, parâmetros ou coleções).
-- **Lombok**: Apenas se já declarado nas dependências do projeto ou explicitamente solicitado.
+## Convenção Java deste repo
+- **`final` obrigatório** em todo parâmetro e variável local (`src/main` e `src/test`),
+  exceto reatribuição real. Código novo já nasce conforme.
+- Lombok permitido (já nas dependências). Javadoc e nomes de métodos de negócio da camada
+  de serviço em **português** (padrão atual).
 
-### Node.js & TypeScript
-- **Baseline**: Node.js 20+ LTS.
-- **Padrões**: TypeScript com checagem estrita (`strict: true`), módulos ESM (`import`/`export`).
-- **Tratamento de Erros**: `async/await` com classes customizadas derivadas de `Error`; propagação consistente sem swallow de exceções.
-- **Prevenção de Leaks**: Monitoramento de event listeners, timers e closures retendo referências em memória.
+## Testes (test-first)
+- JUnit 5 + Spring Boot Test + MockMvc `@WebMvcTest` (serviços via `@MockitoBean`), auth
+  simulada com `SecurityMockMvcRequestPostProcessors.opaqueToken()` — **não** `jwt()`.
+- `RealPostgresSchemaIT` (Testcontainers, **exige Docker**): contexto inteiro contra
+  Postgres descartável com o role/schema restritos de produção — pega drift entre entidade
+  JPA e Liquibase que o H2 `create-drop` não reproduz.
+- Cucumber está nas dependências (mesma versão do `workbox-api`) mas **ainda não há
+  `.feature`/steps** — ao criar, seguir o padrão do `workbox-api` (feature primeiro).
+- Testes de controller + ITs com Testcontainers: `RealPostgresSchemaIT` e `TotalPorTipoIT`
+  (`totalPorTipo` anual/mensal: competência, dono e flags de `RevenueType`). Lógica nova de
+  service/cálculo (totais, 50/30/20) deve nascer com teste unitário/IT.
+- `GET /budget-rules/monthly-series?year` devolve os 12 meses (receita + despesas realizadas por
+  categoria 50/30/20) em 2 queries agrupadas; `MonthlySeriesIT` exige os **mesmos números** de
+  `fifty-thirty-twenty` mês a mês (competência, dono, `includeInMonthlyTotals`).
+- **Cache (Spring + Caffeine)**: leituras agregadas (`total`, `totalPorTipo`, regra 50/30/20, resumos,
+  série) em `budget-aggregates` e catálogos de tipos em `budget-types` (`spring.cache.caffeine.spec`:
+  2000 entradas, TTL 10 min). **Toda escrita** de receita, despesa ou tipo (`save/update/saveAll/
+  salvarAnual/delete`) faz `@CacheEvict(allEntries = true)` — método novo que escreve **precisa** da
+  anotação, senão a leitura fica velha. Chave = classe + método + parâmetros (`BudgetKeyGenerator`;
+  o dono é parâmetro, isola usuários). `@EnableCaching(order = LOWEST_PRECEDENCE - 1)` põe o cache
+  por fora da transação (evict após commit). Cache local à instância: com réplicas, usar Redis.
+  `CacheBehaviorIT` conta queries (estatísticas do Hibernate) e testa a invalidação.
+- Query param obrigatório ausente ou com tipo errado responde **400** (`RestExceptionHandler`), nunca
+  500 — mantenha ao criar handlers.
+- `GET /revenues|spendings/by-type` aceita `month` opcional: sem ele, ano inteiro (receitas
+  respeitam `includeInTotals`); com ele, só o mês (receitas respeitam `includeInMonthlyTotals`,
+  mesma regra do total mensal).
 
-### Estratégia de Testes (JUnit 5 & Cucumber)
-- **Testes Unitários / Integração**:
-  - JUnit 5 (Jupiter), AssertJ para asserções fluentes e Testcontainers para integração com bancos/brokers reais.
-  - Mockito apenas para fronteiras externas de I/O na camada unitária.
-- **Testes BDD (Cucumber)**:
-  - Cenários Gherkin declarativos, focados em regras de negócio (sem jargão técnico na camada de feature).
-  - *Step Definitions* desacoplados, utilizando injeção de dependência do Spring (`@CucumberContextConfiguration`) para orquestração de testes de aceitação e integração.
-- **Testes Node.js**: Vitest (ou Jest se já for convenção do projeto) para unitários; Supertest/Testcontainers para integração com serviços reais (DB, brokers). Mocks restritos a fronteiras externas de I/O.
-- **Regra de Entrega**: Ao entregar código de produção não-trivial, mencione em 1–2 linhas as categorias de teste necessárias (edge cases, concorrência, falhas de rede). A suíte completa só é gerada quando solicitada ou via gatilho `@tests` / `@bdd`.
+## Contrato (OpenAPI)
+`openapi/openapi.yaml` é a fonte da verdade e o front consome só dele. Mudou rota/DTO/
+status/auth → regenerar (`./gradlew generateOpenApiDocs`) e commitar na mesma mudança (CI
+`contract-drift-check`); ajustar `workbox-app` na mesma tarefa quando o contrato
+observável mudar (ver raiz). O proxy do front roteia `revenues|spendings|revenue-types|
+spending-types|budget-rules` pra cá (`vite.config.ts` e `nginx.conf.template`) — rota
+nova com prefixo diferente exige ajustar os dois.
 
-### SQL & Persistência
-- Modelagem voltada para alta volumetria ($10^6+$ registros): análise de sargabilidade em cláusulas `WHERE`, índices compostos e cardinalidade.
-- Postgres: Preferência por JSONB, Window Functions e CTEs sobre subqueries aninhadas.
-- Oracle: Hints restritos com justificativa formal de plano de execução subótimo.
-- Proibição de `SELECT *` em código de produção.
-
-### NoSQL
-- MongoDB: modelagem por padrão de acesso (embedding vs referencing), índices compostos alinhados às queries, atenção a documentos não-limitados (unbounded arrays).
-- Redis: TTL explícito em toda chave volátil, escolha de estrutura de dados (hash/set/sorted set) justificada pelo padrão de acesso, atenção a comandos O(n) em produção (`KEYS`, `SMEMBERS` em sets grandes).
-- Cassandra/DynamoDB: modelagem orientada a query (query-first design), partition key dimensionada para evitar hot partitions, consistência eventual explicitada quando relevante.
-
-### Docker, Kubernetes & Terminal Ops
-- Multi-stage builds com imagens base `distroless` ou `alpine/slim`.
-- Execução como usuário sem privilégios (`USER nonroot`).
-- Zero secrets em imagens (`ARG`/`ENV`); uso de secrets injetados em runtime.
-- Compose com healthchecks, limites de recursos (CPU/Memory) e `condition: service_healthy`.
-- Kubernetes: `resources.requests`/`limits` sempre definidos, `livenessProbe`/`readinessProbe` explícitos, `NetworkPolicy` restritiva por padrão, secrets via `Secret`/external-secrets (nunca em ConfigMap).
-
-## 5. Segurança e Performance Proativa
-- Apontamento mandatório de vulnerabilidades críticas (SQL Injection, SSRF, IDOR, Insecure Deserialization, Broken Auth).
-- Citação de CWE/OWASP apenas com correspondência estrita confirmada.
-- Alerta obrigatório para operações $\ge O(n^2)$ que possam escalar com o volume de dados.
-
-## 6. Gatilhos de Comando
-- `@refactor` — Refatoração aplicando SOLID/Design Patterns com justificativa sucinta por mudança.
-- `@review` — Code review estruturado em tabela: `| Severidade | Local | Problema | Correção |`, ordenado por severidade decrescente (Crítico → Alto → Médio → Baixo). Se nada crítico for encontrado, declare isso explicitamente em vez de omitir a seção.
-- `@explaindeep` — Análise técnica profunda (JVM internals, V8 bytecode/GC, query planner, memory model).
-- `@tests` — Geração de suíte JUnit 5 cobrindo caminho feliz, edge cases e exceções.
-- `@bdd` — Geração de cenários Gherkin (`.feature`) e respectivas Step Definitions em Cucumber.
-
-## 7. Tom
-- Técnico, direto, sênior, analítico e sem conjecturas desnecessárias.
+## Commits
+pt-BR, Conventional Commits, conforme o
+[CLAUDE.md da raiz](../CLAUDE.md#convenção-de-mensagens-de-commit). Trabalhar em
+`develop`; push só com confirmação.

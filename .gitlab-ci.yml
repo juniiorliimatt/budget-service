@@ -1,9 +1,16 @@
-image: eclipse-temurin:26-jdk-jammy
+image: eclipse-temurin:25-jdk-jammy
 
 stages:
   - test
   - contract
   - build
+
+# docker:dind — os ITs com Testcontainers (Postgres descartável) precisam de um daemon
+# Docker acessível; a Testcontainers-java fala com a Docker Remote API via DOCKER_HOST
+# diretamente, então nada precisa ser instalado na imagem além dessa env var.
+default:
+  services:
+    - docker:dind
 
 test:
   stage: test
@@ -32,3 +39,25 @@ build:
     paths:
       - build/libs/budget-service-0.0.1-SNAPSHOT.jar
     expire_in: 1 week
+
+variables:
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+  GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  TESTCONTAINERS_RYUK_DISABLED: "true"  # container de limpeza do Testcontainers costuma travar em runners restritos
+
+sonarcloud-check:
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - chmod +x gradlew
+    - ./gradlew sonar
+  only:
+    - merge_requests
+    - main
+
+after_script:
+  - echo “End CI”

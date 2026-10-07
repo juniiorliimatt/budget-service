@@ -1,0 +1,55 @@
+package br.com.budget.controllers;
+
+import br.com.budget.models.dto.FiftyThirtyTwentyDTO;
+import br.com.budget.models.dto.MonthlySeriesPointDTO;
+import br.com.budget.models.dto.MonthlySummaryDTO;
+import br.com.budget.models.dto.YearlySummaryDTO;
+import br.com.budget.services.BudgetRuleService;
+import java.util.List;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/** Regras de orçamento derivadas de receitas + despesas — mês/ano sempre obrigatórios. */
+@RestController
+@RequestMapping("/api/v1/budget-rules")
+public class BudgetRuleController {
+
+    private final BudgetRuleService budgetRuleService;
+
+    public BudgetRuleController(final BudgetRuleService budgetRuleService) {
+        this.budgetRuleService = budgetRuleService;
+    }
+
+    /** Divide o mês pela regra 50/30/20 (necessidades/desejos/poupança) com base nas receitas e despesas lançadas. */
+    @GetMapping("/fifty-thirty-twenty")
+    public ResponseEntity<FiftyThirtyTwentyDTO> fiftyThirtyTwenty(@RequestParam final int month, @RequestParam final int year,
+                                                                   final Authentication authentication) {
+        return ResponseEntity.ok(budgetRuleService.cinquentaTrintaVinte(month, year, authentication.getName()));
+    }
+
+    /** Total de receitas, despesas e saldo do mês — base da tela inicial. */
+    @GetMapping("/monthly-summary")
+    public ResponseEntity<MonthlySummaryDTO> monthlySummary(@RequestParam final int month, @RequestParam final int year,
+                                                              final Authentication authentication) {
+        return ResponseEntity.ok(budgetRuleService.resumoMensal(month, year, authentication.getName()));
+    }
+
+    /**
+     * Série do ano: 12 pontos (um por mês) com receita e despesas realizadas por categoria
+     * 50/30/20, numa chamada só — mesmos números de {@code fifty-thirty-twenty} mês a mês.
+     */
+    @GetMapping("/monthly-series")
+    public ResponseEntity<List<MonthlySeriesPointDTO>> monthlySeries(@RequestParam final int year, final Authentication authentication) {
+        return ResponseEntity.ok(budgetRuleService.serieMensal(year, authentication.getName()));
+    }
+
+    /** Total de receitas, despesas e saldo do ano inteiro — base da tela de metas. */
+    @GetMapping("/yearly-summary")
+    public ResponseEntity<YearlySummaryDTO> yearlySummary(@RequestParam final int year, final Authentication authentication) {
+        return ResponseEntity.ok(budgetRuleService.resumoAnual(year, authentication.getName()));
+    }
+}

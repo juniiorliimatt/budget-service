@@ -1,44 +1,131 @@
 package br.com.budget.exceptions.handler;
 
+import br.com.budget.exceptions.DuplicateResourceException;
+import br.com.budget.exceptions.ResourceInUseException;
 import br.com.budget.exceptions.ResourceNotFoundException;
-import br.com.budget.exceptions.models.ErrorResponse;
-import br.com.budget.exceptions.models.FieldError;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.time.Instant;
-import java.util.List;
-
+/**
+ * Corpo de erro padronizado em RFC 7807 ({@link ProblemDetail}) — mesmo padrão do
+ * {@code RestExceptionHandler} do workbox-api, incluindo o catch-all
+ * {@link #handleUnexpected}: sem ele, exceção não mapeada aqui cairia no whitelabel error
+ * padrão do Spring, potencialmente vazando stack trace.
+ */
 @RestControllerAdvice
 public class RestExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(RestExceptionHandler.class);
+
+    private final MessageSourceAccessor messages;
+
+    public RestExceptionHandler(final MessageSourceAccessor messages) {
+        this.messages = messages;
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException e, HttpServletRequest request) {
-        return build(HttpStatus.NOT_FOUND, e, request, null);
+    public ProblemDetail handleResourceNotFound(final ResourceNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ProblemDetail handleDuplicate(final DuplicateResourceException exception) {
+        return problem(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(ResourceInUseException.class)
+    public ProblemDetail handleResourceInUse(final ResourceInUseException exception) {
+        return problem(HttpStatus.CONFLICT, exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e, HttpServletRequest request) {
-        List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors().stream()
-                .map(fe -> new FieldError(fe.getField(), fe.getDefaultMessage()))
-                .toList();
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, e, request, fieldErrors);
+    public ProblemDetail handleMethodArgumentNotValid(final MethodArgumentNotValidException exception) {
+        final var detail = problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.validacaoFalhou"));
+        detail.setProperty("errors", exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> Map.of("field", error.getField(), "message", String.valueOf(error.getDefaultMessage())))
+                .toList());
+        return detail;
     }
 
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, Exception e, HttpServletRequest request, List<FieldError> fieldErrors) {
-        var body = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(status.value())
-                .statusName(status.name())
-                .exception(e.getClass().getSimpleName())
-                .message(e.getMessage())
-                .path(request.getRequestURI())
-                .fieldErrors(fieldErrors)
-                .build();
-        return ResponseEntity.status(status).body(body);
+    /**
+     * Ex.: tentar apagar um tipo de receita/despesa ainda referenciado por algum
+     * lançamento. A mensagem original do Hibernate/Postgres expõe detalhe de
+     * implementação (nome de constraint, SQL) que não serve pro usuário final - troca por
+     * uma mensagem de alto nível, mantendo a exceção original só nos logs do server.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(final DataIntegrityViolationException exception, final HttpServletRequest request) {
+        logger.error("Data integrity violation on {}", request.getRequestURI(), exception);
+        return problem(HttpStatus.CONFLICT, messages.getMessage("erro.registroEmUso"));
+    }
+
+    /**
+     * JSON malformado ou com shape errado (ex.: array solto onde o contrato espera um
+     * objeto envelope, tipo incompatível) é sempre erro do client, nunca do server -
+     * sem este handler, {@code @ExceptionHandler(Exception.class)} abaixo capturava
+     * primeiro (roda antes da resolução default do Spring MVC pra essa exceção) e
+     * devolvia 500 pra um payload simplesmente mal formado.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleMessageNotReadable(final HttpMessageNotReadableException exception) {
+        return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.jsonMalFormado"));
+    }
+
+    /** Query param obrigatório ausente (ex.: {@code year}) é erro do client — sem este handler caía no catch-all (500). */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ProblemDetail handleMissingParameter(final MissingServletRequestParameterException exception) {
+        return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.parametroObrigatorio", new Object[]{exception.getParameterName()}));
+    }
+
+    /** Query/path param com tipo errado (ex.: {@code year=abc}, UUID inválido) também é 400. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(final MethodArgumentTypeMismatchException exception) {
+        return problem(HttpStatus.BAD_REQUEST, messages.getMessage("erro.parametroInvalido", new Object[]{exception.getName()}));
+    }
+
+    /** Rota inexistente é erro do client; sem este handler o catch-all abaixo a transformava em 500. */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResource(final NoResourceFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, messages.getMessage("erro.rotaNaoEncontrada"));
+    }
+
+    /** Método HTTP errado para a rota é erro do client (405, com {@code Allow}); sem este handler virava 500. */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> handleMethodNotSupported(final HttpRequestMethodNotSupportedException exception) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).headers(exception.getHeaders())
+                .body(problem(HttpStatus.METHOD_NOT_ALLOWED, messages.getMessage("erro.metodoNaoSuportado")));
+    }
+
+    /** {@code Content-Type} que a rota não consome é erro do client (415); sem este handler virava 500. */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> handleMediaTypeNotSupported(final HttpMediaTypeNotSupportedException exception) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).headers(exception.getHeaders())
+                .body(problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, messages.getMessage("erro.tipoMidiaNaoSuportado")));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleUnexpected(final Exception exception, final HttpServletRequest request) {
+        logger.error("Unhandled exception on {}", request.getRequestURI(), exception);
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, messages.getMessage("erro.inesperado"));
+    }
+
+    private ProblemDetail problem(final HttpStatus status, final String detail) {
+        return ProblemDetail.forStatusAndDetail(status, detail);
     }
 }
